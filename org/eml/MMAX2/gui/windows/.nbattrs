@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE attributes PUBLIC "-//NetBeans//DTD DefaultAttributes 1.0//EN" "http://www.netbeans.org/dtds/attributes-1_0.dtd">
+<attributes version="1.0">
+    <fileobject name="MMAX2MarkableBrowser.java">
+        <attr name="class_dependency_java.awt.event.WindowListener" stringvalue="MMAX2MarkableBrowser"/>
+        <attr name="class_dependency_java.awt.event.ActionListener" stringvalue="MMAX2MarkableBrowser"/>
+        <attr name="class_dependency_javax.swing.JFrame" stringvalue="MMAX2MarkableBrowser"/>
+        <attr name="class_dependency_java.awt.event.MouseListener" stringvalue="MMAX2MarkableBrowser"/>
+        <attr name="class_dependency_javax.swing.event.ListSelectionListener" stringvalue="MMAX2MarkableBrowser"/>
+    </fileobject>
+    <fileobject name="MMAXFileFilter.java">
+        <attr name="class_dependency_javax.swing.filechooser.FileFilter" stringvalue="MMAXFileFilter"/>
+    </fileobject>
+    <fileobject name="MMAX2QueryWindow.java">
+        <attr name="class_dependency_javax.swing.JTextArea" stringvalue="MMAX2QueryWindow.MultiLineCellRenderer"/>
+        <attr name="class_dependency_java.awt.event.WindowListener" stringvalue="MMAX2QueryWindow"/>
+        <attr name="class_dependency_javax.swing.table.TableCellRenderer" stringvalue="MMAX2QueryWindow.MultiLineCellRenderer"/>
+        <attr name="class_dependency_java.awt.event.MouseListener" stringvalue="MMAX2QueryWindow"/>
+        <attr name="class_dependency_java.awt.event.KeyListener" stringvalue="MMAX2QueryWindow"/>
+        <attr name="class_dependency_java.awt.event.ActionListener" stringvalue="MMAX2QueryWindow"/>
+        <attr name="class_dependency_javax.swing.JFrame" stringvalue="MMAX2QueryWindow"/>
+        <attr name="class_dependency_javax.swing.event.ListSelectionListener" stringvalue="MMAX2QueryWindow"/>
+    </fileobject>
+    <fileobject name="MarkableLevelControlWindow.java">
+        <attr name="class_dependency_java.awt.event.ActionListener" stringvalue="MarkableLevelControlWindow"/>
+        <attr name="class_dependency_javax.swing.JFrame" stringvalue="MarkableLevelControlWindow"/>
+    </fileobject>
+    <fileobject name="MMAX2AnnotationDiffWindow.java">
+        <attr name="class_dependency_javax.swing.JTextArea" stringvalue="MMAX2AnnotationDiffWindow.MultiLineCellRenderer"/>
+        <attr name="class_dependency_javax.swing.table.TableCellRenderer" stringvalue="MMAX2AnnotationDiffWindow.MultiLineCellRenderer"/>
+        <attr name="class_dependency_java.awt.event.MouseListener" stringvalue="MMAX2AnnotationDiffWindow"/>
+        <attr name="class_dependency_java.awt.event.KeyListener" stringvalue="MMAX2AnnotationDiffWindow"/>
+        <attr name="class_dependency_java.awt.event.ActionListener" stringvalue="MMAX2AnnotationDiffWindow"/>
+        <attr name="class_dependency_javax.swing.JFrame" stringvalue="MMAX2AnnotationDiffWindow"/>
+        <attr name="class_dependency_javax.swing.event.ListSelectionListener" stringvalue="MMAX2AnnotationDiffWindow"/>
+    </fileobject>
+</attributes>
