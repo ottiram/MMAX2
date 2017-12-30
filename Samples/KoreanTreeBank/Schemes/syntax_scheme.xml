@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- Mark-Christoph Mueller, European Media Lab, Heidelberg, Germany (mueller@eml.org) -->
+<annotationscheme>
+<attribute id="level_value" name="value" type="freetext">
+  <value id="value" name="value"/>
+</attribute>
+<attribute id="level_toplevel" name="toplevel" type="nominal_button">
+  <value id="false" name="false"/>
+  <value id="true" name="true"/>
+</attribute>
+<attribute id="level_number" name="number" type="freetext">
+  <value id="number" name="number"/>
+</attribute>
+
+</annotationscheme>

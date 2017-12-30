@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!DOCTYPE common_paths>
+<common_paths>
+<scheme_path>Schemes\</scheme_path>
+<style_path>Styles\</style_path>
+<basedata_path>Basedata\</basedata_path>
+<customization_path>Customizations\</customization_path>
+<markable_path>Markables\</markable_path>
+<views>
+<!--<stylesheet>trainline_0.xsl</stylesheet>-->
+<stylesheet>trainline_1.xsl</stylesheet>
+<stylesheet>trainline_2.xsl</stylesheet>
+<stylesheet>trainline_3.xsl</stylesheet>
+<stylesheet>trainline_4.xsl</stylesheet>
+<stylesheet>trainline_5.xsl</stylesheet>
+</views>
+<annotations>
+<level name="utterances" schemefile="trainline_utterances_scheme.xml" customization_file="trainline_utterances_customization.xml">$_utterance_markables.xml</level>
+<level name="turns" schemefile="trainline_turns_scheme.xml" customization_file="trainline_turns_customization.xml">$_turn_markables.xml</level>
+</annotations>
+</common_paths>

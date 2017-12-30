@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE markables SYSTEM "markables.dtd">
+<markables xmlns="www.eml.org/NameSpaces/utterances">
+<markable id="markable_15" span="word_41" sp-act="answ"  mmax_level="utterances"  polarity="none"  type="no"  mode="closure" />
+<markable id="markable_17" span="word_42..word_46" topic="number-journey"  sp-act="reqinfo"  mmax_level="utterances"  polarity="positive"  type="q-wh"  mode="open" />
+<markable id="markable_67" span="word_179" sp-act="init"  mmax_level="utterances"  polarity="none"  type="dm" />
+<markable id="markable_11" span="word_33" sp-act="answ"  mmax_level="utterances"  polarity="positive"  type="dm"  mode="closure" />
+<markable id="markable_68" span="word_180..word_193" topic="fare-verify-avail"  sp-act="informintent-hold"  mmax_level="utterances"  polarity="positive"  type="decl"  mode="report-intent" />
+<markable id="markable_13" span="word_34..word_40" topic="railcard"  sp-act="reqinfo"  mmax_level="utterances"  polarity="positive"  type="q-yn"  mode="closed" />
+<markable id="markable_62" span="word_168..word_175" topic="timelocation-arrival"  sp-act="inform"  mmax_level="utterances"  polarity="positive"  type="decl" />
+<markable id="markable_64" span="word_176" sp-act="ackn"  mmax_level="utterances"  polarity="positive"  type="dm" />
+<markable id="markable_65" span="word_177..word_178" sp-act="accept"  mmax_level="utterances"  polarity="positive"  type="decl"  mode="appreciate" />
+<markable id="markable_60" span="word_156..word_157" sp-act="init"  mmax_level="utterances"  polarity="none"  type="dm" />
+<markable id="markable_61" span="word_158..word_167" topic="time-from-location"  sp-act="inform"  mmax_level="utterances"  polarity="positive"  type="decl"  mode="exists" />
+<markable id="markable_79" span="word_237..word_238" sp-act="ackn"  mmax_level="utterances"  polarity="positive"  type="dm" />
+<markable id="markable_77" span="word_214..word_236" topic="time-day-journey"  sp-act="inform"  mmax_level="utterances"  polarity="positive"  type="decl"  mode="constrain" />
+<markable id="markable_75" span="word_213" sp-act="ackn"  mmax_level="utterances"  polarity="positive"  type="dm" />
+<markable id="markable_73" span="word_201..word_212" topic="date-fare-avail"  sp-act="inform"  mmax_level="utterances"  polarity="negative"  type="decl" />
+<markable id="markable_71" span="word_196..word_200" topic="fare"  sp-act="inform"  mmax_level="utterances"  polarity="positive"  type="decl"  mode="report" />
+<markable id="markable_70" span="word_194..word_195" sp-act="ackn"  mmax_level="utterances"  polarity="positive"  type="dm" />
+<markable id="markable_8" span="word_22..word_23" sp-act="init"  mmax_level="utterances"  polarity="none"  type="dm" />
+<markable id="markable_9" span="word_24..word_32" topic="creditcard"  sp-act="reqinfo"  mmax_level="utterances"  polarity="positive"  type="q-yn"  mode="alternative-closed" />
+<markable id="markable_44" span="word_119" sp-act="ackn"  mmax_level="utterances"  polarity="none"  type="yes" />
+<markable id="markable_81" span="word_239..word_253" topic="date"  sp-act="inform"  mmax_level="utterances"  polarity="positive"  type="decl"  mode="constrain-condition" />
+<markable id="markable_33" span="word_87..word_89" sp-act="reqinfo"  mmax_level="utterances"  polarity="positive"  type="q-yn"  mode="closed" />
+<markable id="markable_36" span="word_91..word_100" topic="time"  sp-act="answ"  mmax_level="utterances"  polarity="positive"  type="decl"  mode="closure" />
+<markable id="markable_46" span="word_120..word_123" topic="time-return"  sp-act="reqinfo"  mmax_level="utterances"  polarity="positive"  type="q-wh"  mode="open" />
+<markable id="markable_82" span="word_254..word_261" topic="fare"  sp-act="inform"  mmax_level="utterances"  polarity="positive"  type="decl" />
+<markable id="markable_35" span="word_90" sp-act="init"  mmax_level="utterances"  polarity="none"  type="dm" />
+<markable id="markable_38" span="word_101..word_103" topic="time"  sp-act="echo"  mmax_level="utterances"  polarity="positive"  type="frag" />
+<markable id="markable_48" span="word_124..word_125" topic="day"  sp-act="answ"  mmax_level="utterances"  polarity="positive"  type="frag"  mode="partial-closure" />
+<markable id="markable_85" span="word_265..word_268" sp-act="hold"  mmax_level="utterances"  polarity="positive"  type="imp"  mode="opinion-manage" />
+<markable id="markable_84" span="word_262..word_264" topic="enum"  sp-act="echo"  mmax_level="utterances"  polarity="positive"  type="frag"  mode="partial" />
+<markable id="markable_86" span="word_269..word_274" topic="cancel"  sp-act="reqinfo"  mmax_level="utterances"  polarity="positive"  type="q-yn"  mode="condition-closed" />
+<markable id="markable_39" span="word_104..word_112" topic="enum"  sp-act="expressopinion"  mmax_level="utterances"  polarity="positive"  type="frag"  mode="opinion" />
+<markable id="markable_88" span="word_275..word_281" topic="booking"  sp-act="answ"  mmax_level="utterances"  polarity="negative"  type="frag"  mode="preference-closure" />
+<markable id="markable_30" span="word_72..word_78" topic="time-from-location-departure"  sp-act="reqinfo"  mmax_level="utterances"  polarity="positive"  type="q-wh"  mode="open" />
+<markable id="markable_41" span="word_113..word_116" topic="time-arrival"  sp-act="confirm"  mmax_level="utterances"  polarity="positive"  type="frag" />
+<markable id="markable_32" span="word_79..word_86" topic="time"  sp-act="answ"  mmax_level="utterances"  polarity="negative"  type="decl"  mode="report-doubt-closure" />
+<markable id="markable_43" span="word_117..word_118" sp-act="ackn"  mmax_level="utterances"  polarity="positive"  type="decl"  mode="reassurance" />
+<markable id="markable_19" span="word_47..word_49" topic="number"  sp-act="answ"  mmax_level="utterances"  polarity="positive"  type="frag"  mode="closure" />
+<markable id="markable_90" span="word_282..word_284" sp-act="refuse"  mmax_level="utterances"  polarity="none"  type="no" />
+<markable id="markable_57" span="word_144..word_147" sp-act="ackn"  mmax_level="utterances"  polarity="positive"  type="decl"  mode="reassurance" />
+<markable id="markable_25" span="word_65..word_67" topic="date"  sp-act="uninterpretable"  mmax_level="utterances"  polarity="positive"  type="frag"  mode="abandon" />
+<markable id="markable_6" span="word_17..word_21" topic="to-location"  sp-act="direct"  mmax_level="utterances"  polarity="positive"  type="frag"  mode="closure" />
+<markable id="markable_58" span="word_148..word_155" topic="time"  sp-act="suggest"  mmax_level="utterances"  polarity="positive"  type="imp" />
+<markable id="markable_93" span="word_288..word_289" sp-act="bye"  mmax_level="utterances"  polarity="positive"  type="frag"  mode="farewell-closing-partial" />
+<markable id="markable_55" span="word_138..word_143" topic="day"  sp-act="confirm"  mmax_level="utterances"  polarity="positive"  type="decl" />
+<markable id="markable_23" span="word_57..word_64" topic="day"  sp-act="answ"  mmax_level="utterances"  polarity="positive"  type="decl"  mode="opinion-closure" />
+<markable id="markable_92" span="word_285..word_287" sp-act="ackn"  mmax_level="utterances"  polarity="positive"  type="dm" />
+<markable id="markable_4" span="word_7..word_16" topic="journey"  sp-act="reqdirect"  mmax_level="utterances"  polarity="positive"  type="q-wh"  mode="preference-open" />
+<markable id="markable_3" span="word_5..word_6" sp-act="identifyself"  mmax_level="utterances"  polarity="positive"  type="frag"  mode="intro" />
+<markable id="markable_29" span="word_70..word_71" topic="month"  sp-act="echo"  mmax_level="utterances"  polarity="positive"  type="frag"  mode="partial" />
+<markable id="markable_2" span="word_2..word_4" sp-act="refer"  mmax_level="utterances"  polarity="positive"  type="frag"  mode="deixis" />
+<markable id="markable_27" span="word_68..word_69" topic="month"  sp-act="complete"  mmax_level="utterances"  polarity="positive"  type="frag"  mode="partial" />
+<markable id="markable_1" span="word_0..word_1" sp-act="greet"  mmax_level="utterances"  polarity="positive"  type="frag"  mode="opening-greet" />
+<markable id="markable_95" span="word_290..word_292" sp-act="bye"  mmax_level="utterances"  polarity="positive"  type="frag"  mode="farewell-closing-partial" />
+<markable id="markable_50" span="word_126..word_129" topic="time-departure"  sp-act="reqinfo"  mmax_level="utterances"  polarity="positive"  type="q-wh"  mode="open" />
+<markable id="markable_21" span="word_50..word_56" topic="date-journey"  sp-act="reqinfo"  mmax_level="utterances"  polarity="positive"  type="q-wh"  mode="open" />
+<markable id="markable_54" span="word_134..word_137" topic="time"  sp-act="refer"  mmax_level="utterances"  polarity="positive"  type="frag"  mode="deixis" />
+<markable id="markable_52" span="word_130..word_133" topic="time"  sp-act="answ"  mmax_level="utterances"  polarity="positive"  type="frag"  mode="closure" />
+</markables>

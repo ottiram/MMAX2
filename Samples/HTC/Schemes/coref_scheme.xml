@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<annotationscheme>
+
+ <attribute id="level_np_form" name="np_form" type="nominal_button" text="Choose noun phrase form!">
+  <value id="value_np_form_none" name="none"/>
+  <value id="value_np_form_NE" name="NE"/>
+  <value id="value_np_form_defNP" name="defNP"/>
+  <value id="value_np_form_indefNP" name="indefNP"/>
+  <value id="value_np_form_PPER" name="PPER"/>
+  <value id="value_np_form_PPOS" name="PPOS"/>
+  <value id="value_np_form_PDS" name="PDS"/>
+  <value id="value_np_form_other" name="other"/>
+ </attribute>
+
+ <attribute id="level_grammatical_role" name="grammatical_role" type="nominal_button" text="">
+  <value id="value_grammatical_role_none" name="none"/>
+  <value id="value_grammatical_role_SBJ" name="SBJ"/>
+  <value id="value_grammatical_role_OBJ" name="OBJ"/>
+  <value id="value_grammatical_role_other" name="other"/>
+ </attribute>
+
+ <attribute id="level_agreement" name="agreement" type="nominal_list" text="">
+  <value id="value_agreement_none" name="none"/>
+  <value id="value_agreement_3M" name="3M"/>
+  <value id="value_agreement_3F" name="3F"/>
+  <value id="value_agreement_3N" name="3N"/>
+  <value id="value_agreement_3P" name="3P"/>
+  <value id="value_agreement_1S" name="1S"/>
+  <value id="value_agreement_2S" name="2S"/>
+  <value id="value_agreement_1P" name="1P"/>
+  <value id="value_agreement_2P" name="2P"/>
+  <value id="value_agreement_other" name="other"/>
+ </attribute>
+
+ <attribute id="level_sortal_class" name="semantic_class" type="nominal_button" text="Choose semantic class of this entity!">
+  <value id="value_sortal_class_none" name="none"/>
+  <value id="value_sortal_class_abstract" name="abstract"/>
+  <value id="value_sortal_class_human" name="human"/>
+  <value id="value_sortal_class_phys_obj" name="phys_obj"/>
+  <value id="value_sortal_class_other" name="other"/>
+ </attribute>
+
+ <attribute id="level_corefclass" name="Coref_class" color="green" width="2" type="markable_set" add_to_markableset_text="Mark as coreferent"  style="lcurve" remove_from_markableset_text="Unmark as coreferent" adopt_into_markableset_text="Move this into current coreference set" merge_into_markableset_text="Merge both coreference sets into one">
+  <value id="value_corefclass" name="Coref_class"/>
+ </attribute>
+
+ <attribute id="level_type" name="Type" type="nominal_list" text="Choose type of expression!">
+  <value id="value_type_none" name="none"/>
+  <value id="value_type_anaphoric" name="anaphoric" next="level_ante_sub_anaphoric"/>
+  <value id="value_type_bridging" name="bridging" next="level_bridgingantecedent"/>
+ </attribute>
+
+ <attribute id="level_ante_sub_anaphoric" name="ante_sub_anaphoric" type="nominal_button" text="Choose anaphor type!">
+  <value id="value_anaphoric_ante_sub_anaphoric_none" name="none"/>
+  <value id="value_anaphoric_ante_sub_anaphoric_direct" name="direct"/>
+  <value id="value_anaphoric_ante_sub_anaphoric_pronominal" name="pronominal"/>
+  <value id="value_anaphoric_ante_sub_anaphoric_IS-A" name="IS-A"/>
+  <value id="value_anaphoric_ante_sub_anaphoric_other" name="other"/>
+ </attribute>
+
+ <attribute id="level_bridgingantecedent" name="Bridging_antecedent" type="markable_pointer" color="blue" width="1" style="lcurve" max_size="1" point_to_markable_text="Mark as bridging antecedent" remove_pointer_to_markable_text="Unmark as bridging antecedent">
+  <value id="value_bridging_antecedent" name="not_set" />
+  <value id="value_bridging_antecedent" name="set" next="level_ante_sub_bridging"/>
+ </attribute>
+
+
+ <attribute id="level_ante_sub_bridging" name="ante_sub_bridging" type="nominal_button" text="Choose bridging type!">
+  <value id="value_bridging_ante_sub_bridging_none" name="none"/>
+  <value id="value_bridging_ante_sub_bridging_part-whole" name="part-whole"/>
+  <value id="value_bridging_ante_sub_bridging_cause-effect" name="cause-effect"/>
+  <value id="value_bridging_ante_sub_bridging_entity-attribute" name="entity-attribute"/>
+  <value id="value_bridging_ante_sub_bridging_other" name="other"/>
+ </attribute>
+
+</annotationscheme>

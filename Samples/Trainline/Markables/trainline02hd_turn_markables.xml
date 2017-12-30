@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE markables SYSTEM "markables.dtd">
+<markables xmlns="www.eml.org/NameSpaces/turns">
+<markable id="markable_8" span="word_47..word_49" mmax_level="turns"  speaker="b"  number="8" />
+<markable id="markable_9" span="word_50..word_56" mmax_level="turns"  speaker="a"  number="9" />
+<markable id="markable_34" span="word_262..word_274" mmax_level="turns"  speaker="b"  number="34" />
+<markable id="markable_16" span="word_101..word_112" mmax_level="turns"  speaker="b"  number="16" />
+<markable id="markable_33" span="word_239..word_261" mmax_level="turns"  speaker="a"  number="33" />
+<markable id="markable_15" span="word_90..word_100" mmax_level="turns"  speaker="a"  number="15" />
+<markable id="markable_36" span="word_282..word_284" mmax_level="turns"  speaker="b"  number="36" />
+<markable id="markable_18" span="word_117..word_119" mmax_level="turns"  speaker="b"  number="18" />
+<markable id="markable_35" span="word_275..word_281" mmax_level="turns"  speaker="a"  number="35" />
+<markable id="markable_17" span="word_113..word_116" mmax_level="turns"  speaker="a"  number="17" />
+<markable id="markable_38" span="word_290..word_292" mmax_level="turns"  speaker="b"  number="38" />
+<markable id="markable_12" span="word_68..word_69" mmax_level="turns"  speaker="b"  number="12" />
+<markable id="markable_37" span="word_285..word_289" mmax_level="turns"  speaker="a"  number="37" />
+<markable id="markable_11" span="word_65..word_67" mmax_level="turns"  speaker="a"  number="11" />
+<markable id="markable_14" span="word_79..word_89" mmax_level="turns"  speaker="b"  number="14" />
+<markable id="markable_13" span="word_70..word_78" mmax_level="turns"  speaker="a"  number="13" />
+<markable id="markable_10" span="word_57..word_64" mmax_level="turns"  speaker="b"  number="10" />
+<markable id="markable_30" span="word_213" mmax_level="turns"  speaker="b"  number="30" />
+<markable id="markable_32" span="word_237..word_238" mmax_level="turns"  speaker="b"  number="32" />
+<markable id="markable_31" span="word_214..word_236" mmax_level="turns"  speaker="a"  number="31" />
+<markable id="markable_19" span="word_120..word_123" mmax_level="turns"  speaker="a"  number="19" />
+<markable id="markable_25" span="word_156..word_175" mmax_level="turns"  speaker="a"  number="25" />
+<markable id="markable_7" span="word_42..word_46" mmax_level="turns"  speaker="a"  number="7" />
+<markable id="markable_24" span="word_144..word_155" mmax_level="turns"  speaker="b"  number="24" />
+<markable id="markable_6" span="word_41" mmax_level="turns"  speaker="b"  number="6" />
+<markable id="markable_23" span="word_134..word_143" mmax_level="turns"  speaker="a"  number="23" />
+<markable id="markable_5" span="word_34..word_40" mmax_level="turns"  speaker="a"  number="5" />
+<markable id="markable_22" span="word_130..word_133" mmax_level="turns"  speaker="b"  number="22" />
+<markable id="markable_4" span="word_33" mmax_level="turns"  speaker="b"  number="4" />
+<markable id="markable_29" span="word_201..word_212" mmax_level="turns"  speaker="a"  number="29" />
+<markable id="markable_3" span="word_22..word_32" mmax_level="turns"  speaker="a"  number="3" />
+<markable id="markable_28" span="word_194..word_200" mmax_level="turns"  speaker="b"  number="28" />
+<markable id="markable_2" span="word_17..word_21" mmax_level="turns"  speaker="b"  number="2" />
+<markable id="markable_27" span="word_179..word_193" mmax_level="turns"  speaker="a"  number="27" />
+<markable id="markable_1" span="word_0..word_16" mmax_level="turns"  speaker="a"  number="1" />
+<markable id="markable_26" span="word_176..word_178" mmax_level="turns"  speaker="b"  number="26" />
+<markable id="markable_21" span="word_126..word_129" mmax_level="turns"  speaker="a"  number="21" />
+<markable id="markable_20" span="word_124..word_125" mmax_level="turns"  speaker="b"  number="20" />
+</markables>

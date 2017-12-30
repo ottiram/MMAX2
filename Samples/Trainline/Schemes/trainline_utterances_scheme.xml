@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- Mark-Christoph Mueller, European Media Lab, Heidelberg, Germany (mueller@eml.org) -->
+
+<annotationscheme>
+
+<attribute id="utterance_type" type="nominal_list" name="type">
+<value id="utterance_type_ackn" name="ackn"/>
+<value id="utterance_type_answ" name="answ"/>
+<value id="utterance_type_decl" name="decl"/>
+<value id="utterance_type_dm" name="dm"/>
+<value id="utterance_type_frag" name="frag"/>
+<value id="utterance_type_q-wh" name="q-wh"/>
+<value id="utterance_type_q-yn" name="q-yn"/>
+<value id="utterance_type_yes" name="yes"/>
+<value id="utterance_type_no" name="no"/>
+<value id="utterance_type_imp" name="imp"/>
+</attribute>
+
+<attribute id="utterance_speechact" type="nominal_list" name="sp-act">
+<value id="utterance_speechact_1" name="accept"/>
+<value id="utterance_speechact_2" name="ackn"/>
+<value id="utterance_speechact_3" name="answ"/>
+<value id="utterance_speechact_4" name="answElab"/>
+<value id="utterance_speechact_5" name="appreciate"/>
+<value id="utterance_speechact_6" name="bye"/>
+<value id="utterance_speechact_7" name="complete"/>
+<value id="utterance_speechact_8" name="confirm"/>
+<value id="utterance_speechact_9" name="correct"/>
+<value id="utterance_speechact_10" name="correct-self"/>
+<value id="utterance_speechact_11" name="direct"/>
+<value id="utterance_speechact_12" name="directElab"/>
+<value id="utterance_speechact_13" name="echo"/>
+<value id="utterance_speechact_14" name="exclaim"/>
+<value id="utterance_speechact_15" name="expressOpinion"/>
+<value id="utterance_speechact_16" name="expressPossibility"/>
+<value id="utterance_speechact_17" name="expressRegret"/>
+<value id="utterance_speechact_18" name="expressWish"/>
+<value id="utterance_speechact_19" name="greet"/>
+<value id="utterance_speechact_20" name="hold"/>
+<value id="utterance_speechact_21" name="identifySelf"/>
+<value id="utterance_speechact_22" name="inform"/>
+<value id="utterance_speechact_23" name="informIntent"/>
+<value id="utterance_speechact_24" name="informIntent-hold"/>
+<value id="utterance_speechact_25" name="init"/>
+<value id="utterance_speechact_26" name="negate"/>
+<value id="utterance_speechact_27" name="offer"/>
+<value id="utterance_speechact_28" name="pardon"/>
+<value id="utterance_speechact_29" name="raiseIssue"/>
+<value id="utterance_speechact_30" name="refer"/>
+<value id="utterance_speechact_31" name="refuse"/>
+<value id="utterance_speechact_32" name="reqDirect"/>
+<value id="utterance_speechact_33" name="reqInfo"/>
+<value id="utterance_speechact_34" name="reqModal"/>
+<value id="utterance_speechact_35" name="selfTalk"/>
+<value id="utterance_speechact_36" name="suggest"/>
+<value id="utterance_speechact_37" name="thank"/>
+<value id="utterance_speechact_38" name="thank-bye"/>
+<value id="utterance_speechact_39" name="thirdParty"/>
+<value id="utterance_speechact_40" name="unclassifiable"/>
+<value id="utterance_speechact_41" name="uninterpretable"/>
+</attribute>
+
+<attribute id="utterance_polarity" type="nominal_button" name="polarity">
+<value id="utterance_polarity_none" name="none"/>
+<value id="utterance_polarity_positive" name="positive"/>
+<value id="utterance_polarity_negative" name="negative"/>
+</attribute>
+
+<attribute id="utterance_topic" type="freetext" name="topic">
+<value id="utterance_topic_value" name="topic"/>
+</attribute>
+
+<attribute id="utterance_mode" type="freetext" name="mode">
+<value id="utterance_mode_value" name="mode"/>
+</attribute>
+</annotationscheme>

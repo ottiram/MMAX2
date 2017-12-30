@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<!DOCTYPE markables SYSTEM "markables.dtd">
+<markables xmlns="www.eml.org/NameSpaces/utterances">
+<markable id="markable_33" span="word_126..word_133" sp-act="answ"  type="frag"  topic="time"  polarity="positive" />
+<markable id="markable_47" span="word_172..word_178" sp-act="confirm"  type="frag"  topic="time"  polarity="positive" />
+<markable id="markable_76" span="word_248" sp-act="ackn"  type="yes"  polarity="none" />
+<markable id="markable_28" span="word_113..word_115" sp-act="answ"  type="decl"  mode="closure"  polarity="positive" />
+<markable id="markable_23" span="word_105..word_106" sp-act="answ"  type="yes"  mode="closure"  polarity="none" />
+<markable id="markable_31" span="word_117..word_125" sp-act="reqdirect"  type="q-wh"  topic="time-from-location"  mode="preference-open"  polarity="positive" />
+<markable id="markable_56" span="word_189..word_195" sp-act="reqinfo"  type="q-yn"  topic="railcard"  mode="closed"  polarity="positive" />
+<markable id="markable_61" span="word_205..word_208" sp-act="correct-self"  type="decl"  mode="report"  polarity="positive" />
+<markable id="markable_34" span="word_134..word_136" sp-act="answelab"  type="frag"  topic="time"  mode="closure"  polarity="positive" />
+<markable id="markable_19" span="word_95..word_98" sp-act="answ"  type="decl"  topic="creditcard"  mode="closure"  polarity="positive" />
+<markable id="markable_60" span="word_201..word_204" sp-act="correct-self"  type="decl"  mode="report"  polarity="negative" />
+<markable id="markable_66" span="word_213" sp-act="ackn"  type="yes"  polarity="none" />
+<markable id="markable_14" span="word_65..word_82" sp-act="directelab"  type="decl"  topic="number-day-fare-avail"  mode="constrain-report-condition-closure"  polarity="positive" />
+<markable id="markable_78" span="word_249..word_250" sp-act="init"  type="dm"  polarity="positive" />
+<markable id="markable_67" span="word_214..word_223" sp-act="reqmodal"  type="q-yn"  topic="time-booking"  mode="closed"  polarity="positive" />
+<markable id="markable_6" span="word_16" sp-act="greet"  type="frag"  mode="opening-greet-partial"  polarity="positive" />
+<markable id="markable_58" span="word_196..word_197" sp-act="answ"  type="no"  polarity="none" />
+<markable id="markable_79" span="word_251..word_256" sp-act="informintent"  type="decl"  topic="time"  mode="intent"  polarity="positive" />
+<markable id="markable_36" span="word_137..word_138" sp-act="init"  type="dm"  polarity="none" />
+<markable id="markable_4" span="word_6..word_15" sp-act="reqdirect"  type="q-wh"  topic="journey"  mode="preference-open"  polarity="positive" />
+<markable id="markable_51" span="word_180" sp-act="ackn"  type="dm"  polarity="positive" />
+<markable id="markable_41" span="word_164..word_166" sp-act="inform"  type="frag"  topic="enum"  polarity="positive" />
+<markable id="markable_86" span="word_266..word_268" sp-act="bye"  type="frag"  mode="farewell-closing"  polarity="positive" />
+<markable id="markable_74" span="word_245..word_247" sp-act="echo"  type="decl"  topic="day"  polarity="positive" />
+<markable id="markable_2" span="word_2..word_3" sp-act="refer"  type="frag"  mode="deixis"  polarity="positive" />
+<markable id="markable_29" span="word_116" sp-act="ackn"  type="yes"  polarity="none" />
+<markable id="markable_54" span="word_187" sp-act="ackn"  type="yes"  polarity="none" />
+<markable id="markable_70" span="word_225" sp-act="init"  type="dm"  polarity="positive" />
+<markable id="markable_17" span="word_84..word_94" sp-act="reqinfo"  type="q-yn"  topic="creditcard"  mode="closed"  polarity="positive" />
+<markable id="markable_8" span="word_20..word_37" sp-act="direct"  type="decl"  topic="to-from-fare-location-avail-journey"  mode="intent-preference-exists-condition-closure"  polarity="positive" />
+<markable id="markable_69" span="word_224" sp-act="accept"  type="dm"  polarity="positive" />
+<markable id="markable_83" span="word_260..word_262" sp-act="thank"  type="frag"  polarity="positive" />
+<markable id="markable_72" span="word_232..word_244" sp-act="answelab"  type="decl"  topic="time-booking-day-journey"  mode="constrain-closure"  polarity="positive" />
+<markable id="markable_26" span="word_108..word_112" sp-act="reqinfo"  type="q-yn"  mode="closed"  polarity="positive" />
+<markable id="markable_16" span="word_83" sp-act="init"  type="dm"  polarity="none" />
+<markable id="markable_7" span="word_17..word_19" sp-act="greet"  type="frag"  mode="opening-greet"  polarity="positive" />
+<markable id="markable_25" span="word_107" sp-act="init"  type="dm"  polarity="none" />
+<markable id="markable_46" span="word_170..word_171" sp-act="echo"  type="frag"  topic="enum"  polarity="positive" />
+<markable id="markable_44" span="word_168..word_169" sp-act="correct"  type="frag"  topic="enum"  polarity="positive" />
+<markable id="markable_39" span="word_160..word_163" sp-act="inform"  type="frag"  topic="time-arrival"  polarity="positive" />
+<markable id="markable_11" span="word_40..word_55" sp-act="reqdirect"  type="q-yn"  topic="booking-journey"  mode="preference-alternative-closed"  polarity="positive" />
+<markable id="markable_81" span="word_257..word_259" sp-act="ackn"  type="dm"  polarity="positive" />
+<markable id="markable_65" span="word_211..word_212" sp-act="ackn"  type="dm"  polarity="positive" />
+<markable id="markable_13" span="word_56..word_64" sp-act="direct"  type="frag"  topic="booking"  mode="report-intent-preference"  polarity="positive" />
+<markable id="markable_43" span="word_167" sp-act="negate"  type="no"  polarity="none" />
+<markable id="markable_1" span="word_0..word_1" sp-act="greet"  type="frag"  mode="opening-greet"  polarity="positive" />
+<markable id="markable_59" span="word_198..word_200" sp-act="answelab"  type="decl"  mode="report-closure"  polarity="negative" />
+<markable id="markable_84" span="word_263..word_265" sp-act="bye"  type="frag"  mode="farewell-closing"  polarity="positive" />
+<markable id="markable_37" span="word_139..word_145" sp-act="refer"  type="frag"  topic="fare"  mode="deixis"  polarity="positive" />
+<markable id="markable_52" span="word_181..word_186" sp-act="confirm"  type="decl"  topic="fare"  polarity="positive" />
+<markable id="markable_21" span="word_99..word_104" sp-act="reqinfo"  type="q-yn"  topic="day"  mode="closed"  polarity="positive" />
+<markable id="markable_63" span="word_209..word_210" sp-act="ackn"  type="dm"  polarity="positive" />
+<markable id="markable_38" span="word_146..word_159" sp-act="inform"  type="decl"  topic="time-avail"  polarity="positive" />
+<markable id="markable_49" span="word_179" sp-act="ackn"  type="yes"  polarity="none" />
+<markable id="markable_10" span="word_38..word_39" sp-act="init"  type="dm"  polarity="none" />
+<markable id="markable_3" span="word_4..word_5" sp-act="identifyself"  type="frag"  mode="intro"  polarity="positive" />
+<markable id="markable_55" span="word_188" sp-act="init"  type="dm"  polarity="none" />
+<markable id="markable_71" span="word_226..word_231" sp-act="answ"  type="decl"  topic="avail"  mode="constrain"  polarity="positive" />
+</markables>

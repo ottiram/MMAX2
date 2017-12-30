@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- Mark-Christoph Mueller, European Media Lab, Heidelberg, Germany (mueller@eml.org) -->
+<annotationscheme>
+<attribute id="level_ktb_pos" name="ktb_pos" type="nominal_list">
+  <value id="none" name="NONE"/>
+  <value id="npr" name="NPR"/>
+  <value id="nnc" name="NNC"/>
+  <value id="nnx" name="NNX"/>
+  <value id="npn" name="NPN"/>
+  <value id="nnu" name="NNU"/>
+  <value id="nfw" name="NFW"/>
+  <value id="vv" name="VV"/>
+  <value id="vj" name="VJ"/>
+  <value id="vx" name="VX"/>
+  <value id="adv" name="ADV"/>
+  <value id="adc" name="ADC"/>
+  <value id="dan" name="DAN"/>
+  <value id="ij" name="IJ"/>
+  <value id="lst" name="LST"/>
+  <value id="pca" name="PCA"/>
+  <value id="pad" name="PAD"/>
+  <value id="pcj" name="PCJ"/>
+  <value id="pau" name="PAU"/>
+  <value id="co" name="CO"/>
+  <value id="efn" name="EFN"/>
+  <value id="ecs" name="ECS"/>
+  <value id="eau" name="EAU"/>
+  <value id="ean" name="EAN"/>
+  <value id="enm" name="ENM"/>
+  <value id="epf" name="EPF"/>
+  <value id="xsf" name="XSF"/>
+  <value id="xsv" name="XSV"/>
+  <value id="xsj" name="XSJ"/>
+  <value id="xpf" name="XPF"/>
+  <value id="scm" name="SCM"/>
+  <value id="sfn" name="SFN"/>
+  <value id="slq" name="SLQ"/>
+  <value id="srq" name="SRQ"/>
+  <value id="ssy" name="SSY"/>
+</attribute>
+</annotationscheme>

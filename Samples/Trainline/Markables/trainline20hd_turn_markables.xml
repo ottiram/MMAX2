@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<!DOCTYPE markables SYSTEM "markables.dtd">
+<markables xmlns="www.eml.org/NameSpaces/turns">
+<markable   span="word_0..word_15" speaker="A" number="1" id="markable_1"/>
+<markable   span="word_16..word_37" speaker="B" number="2" id="markable_2"/>
+<markable   span="word_38..word_55" speaker="A" number="3" id="markable_3"/>
+<markable   span="word_56..word_82" speaker="B" number="4" id="markable_4"/>
+<markable   span="word_83..word_94" speaker="A" number="5" id="markable_5"/>
+<markable   span="word_95..word_98" speaker="B" number="6" id="markable_6"/>
+<markable   span="word_99..word_104" speaker="A" number="7" id="markable_7"/>
+<markable   span="word_105..word_106" speaker="B" number="8" id="markable_8"/>
+<markable   span="word_107..word_112" speaker="A" number="9" id="markable_9"/>
+<markable   span="word_113..word_116" speaker="B" number="10" id="markable_10"/>
+<markable   span="word_117..word_125" speaker="A" number="11" id="markable_11"/>
+<markable   span="word_126..word_136" speaker="B" number="12" id="markable_12"/>
+<markable   span="word_137..word_163" speaker="A" number="13" id="markable_13"/>
+<markable   span="word_164..word_166" speaker="B" number="14" id="markable_14"/>
+<markable   span="word_167..word_169" speaker="A" number="15" id="markable_15"/>
+<markable   span="word_170..word_178" speaker="B" number="16" id="markable_16"/>
+<markable   span="word_179" speaker="A" number="17" id="markable_17"/>
+<markable   span="word_180..word_186" speaker="B" number="18" id="markable_18"/>
+<markable   span="word_187..word_195" speaker="A" number="19" id="markable_19"/>
+<markable   span="word_196..word_208" speaker="B" number="20" id="markable_20"/>
+<markable   span="word_209..word_210" speaker="A" number="21" id="markable_21"/>
+<markable   span="word_211..word_223" speaker="B" number="22" id="markable_22"/>
+<markable   span="word_224..word_244" speaker="A" number="23" id="markable_23"/>
+<markable   span="word_245..word_247" speaker="B" number="24" id="markable_24"/>
+<markable   span="word_248" speaker="A" number="25" id="markable_25"/>
+<markable   span="word_249..word_256" speaker="B" number="26" id="markable_26"/>
+<markable   span="word_257..word_259" speaker="A" number="27" id="markable_27"/>
+<markable   span="word_260..word_265" speaker="B" number="28" id="markable_28"/>
+<markable   span="word_266..word_268" speaker="A" number="29" id="markable_29"/>
+</markables>

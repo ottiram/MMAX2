@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<turns>
+<turn   span="word_0..word_16" speaker="A" number="1" id="turn_1"/>
+<turn   span="word_17..word_21" speaker="B" number="2" id="turn_2"/>
+<turn   span="word_22..word_32" speaker="A" number="3" id="turn_3"/>
+<turn   span="word_33" speaker="B" number="4" id="turn_4"/>
+<turn   span="word_34..word_40" speaker="A" number="5" id="turn_5"/>
+<turn   span="word_41" speaker="B" number="6" id="turn_6"/>
+<turn   span="word_42..word_46" speaker="A" number="7" id="turn_7"/>
+<turn   span="word_47..word_49" speaker="B" number="8" id="turn_8"/>
+<turn   span="word_50..word_56" speaker="A" number="9" id="turn_9"/>
+<turn   span="word_57..word_64" speaker="B" number="10" id="turn_10"/>
+<turn   span="word_65..word_67" speaker="A" number="11" id="turn_11"/>
+<turn   span="word_68..word_69" speaker="B" number="12" id="turn_12"/>
+<turn   span="word_70..word_78" speaker="A" number="13" id="turn_13"/>
+<turn   span="word_79..word_89" speaker="B" number="14" id="turn_14"/>
+<turn   span="word_90..word_100" speaker="A" number="15" id="turn_15"/>
+<turn   span="word_101..word_112" speaker="B" number="16" id="turn_16"/>
+<turn   span="word_113..word_116" speaker="A" number="17" id="turn_17"/>
+<turn   span="word_117..word_119" speaker="B" number="18" id="turn_18"/>
+<turn   span="word_120..word_123" speaker="A" number="19" id="turn_19"/>
+<turn   span="word_124..word_125" speaker="B" number="20" id="turn_20"/>
+<turn   span="word_126..word_129" speaker="A" number="21" id="turn_21"/>
+<turn   span="word_130..word_133" speaker="B" number="22" id="turn_22"/>
+<turn   span="word_134..word_143" speaker="A" number="23" id="turn_23"/>
+<turn   span="word_144..word_155" speaker="B" number="24" id="turn_24"/>
+<turn   span="word_156..word_175" speaker="A" number="25" id="turn_25"/>
+<turn   span="word_176..word_178" speaker="B" number="26" id="turn_26"/>
+<turn   span="word_179..word_193" speaker="A" number="27" id="turn_27"/>
+<turn   span="word_194..word_200" speaker="B" number="28" id="turn_28"/>
+<turn   span="word_201..word_212" speaker="A" number="29" id="turn_29"/>
+<turn   span="word_213" speaker="B" number="30" id="turn_30"/>
+<turn   span="word_214..word_236" speaker="A" number="31" id="turn_31"/>
+<turn   span="word_237..word_238" speaker="B" number="32" id="turn_32"/>
+<turn   span="word_239..word_261" speaker="A" number="33" id="turn_33"/>
+<turn   span="word_262..word_274" speaker="B" number="34" id="turn_34"/>
+<turn   span="word_275..word_281" speaker="A" number="35" id="turn_35"/>
+<turn   span="word_282..word_284" speaker="B" number="36" id="turn_36"/>
+<turn   span="word_285..word_289" speaker="A" number="37" id="turn_37"/>
+<turn   span="word_290..word_292" speaker="B" number="38" id="turn_38"/>
+</turns>

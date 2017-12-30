@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE markables SYSTEM "markables.dtd">
+<markables xmlns="www.eml.org/NameSpaces/coref">
+<markable id="markable_34" span="word_10..word_12" grammatical_role="sbj"  coref_class="set_12"  mmax_level="coref"  agreement="3n"  semantic_class="phys_obj"  type="anaphoric"  ante_sub_anaphoric="direct"  np_form="ne" />
+<markable id="markable_44" span="word_46..word_54" grammatical_role="obj"  coref_class="set_12"  mmax_level="coref"  agreement="3n"  semantic_class="phys_obj"  type="anaphoric"  ante_sub_anaphoric="is-a"  np_form="defnp" />
+<markable id="markable_33" span="word_7..word_8" grammatical_role="other"  coref_class="empty"  mmax_level="coref"  agreement="3p"  semantic_class="phys_obj"  type="none"  np_form="indefnp" />
+<markable id="markable_45" span="word_56" grammatical_role="sbj"  coref_class="set_12"  mmax_level="coref"  agreement="3n"  semantic_class="phys_obj"  type="anaphoric"  ante_sub_anaphoric="pronominal"  np_form="pper" />
+<markable id="markable_46" span="word_68" grammatical_role="other"  coref_class="empty"  mmax_level="coref"  agreement="other"  semantic_class="abstract"  type="none"  np_form="other" />
+<markable id="markable_36" span="word_19" grammatical_role="sbj"  coref_class="set_12"  mmax_level="coref"  agreement="3n"  semantic_class="phys_obj"  type="anaphoric"  ante_sub_anaphoric="pronominal"  np_form="pper" />
+<markable id="markable_35" span="word_15..word_16" grammatical_role="other"  coref_class="empty"  mmax_level="coref"  agreement="3f"  semantic_class="phys_obj"  type="none"  np_form="indefnp" />
+<markable id="markable_47" span="word_70..word_71" grammatical_role="other"  coref_class="empty"  mmax_level="coref"  agreement="3m"  semantic_class="human"  type="none"  np_form="ne" />
+<markable id="markable_38" span="word_29..word_30" grammatical_role="sbj"  coref_class="empty"  mmax_level="coref"  agreement="3m"  semantic_class="phys_obj"  bridging_antecedent="markable_34"  ante_sub_bridging="part-whole"  type="bridging"  np_form="defnp" />
+<markable id="markable_48" span="word_65..word_71" grammatical_role="other"  coref_class="empty"  mmax_level="coref"  agreement="3m"  semantic_class="abstract"  type="none"  np_form="defnp" />
+<markable id="markable_49" span="word_73..word_74" grammatical_role="sbj"  coref_class="empty"  mmax_level="coref"  agreement="3m"  semantic_class="human"  type="none"  np_form="ne" />
+<markable id="markable_37" span="word_23..word_24" grammatical_role="other"  coref_class="empty"  mmax_level="coref"  agreement="3f"  semantic_class="phys_obj"  type="none"  np_form="defnp" />
+<markable id="markable_39" span="word_33..word_39" grammatical_role="obj"  coref_class="empty"  mmax_level="coref"  agreement="3n"  semantic_class="phys_obj"  type="none"  np_form="defnp" />
+<markable id="markable_62" span="word_106..word_107" grammatical_role="other"  coref_class="empty"  mmax_level="coref"  agreement="3m"  semantic_class="human"  type="none"  np_form="ne" />
+<markable id="markable_63" span="word_26" grammatical_role="other"  coref_class="empty"  mmax_level="coref"  agreement="3m"  semantic_class="phys_obj"  type="none"  np_form="indefnp" />
+<markable id="markable_64" span="word_1..word_2" grammatical_role="none"  coref_class="empty"  mmax_level="coref"  agreement="none"  semantic_class="none"  type="none"  np_form="none" />
+<markable id="markable_40" span="word_37..word_39" grammatical_role="other"  coref_class="empty"  mmax_level="coref"  agreement="3p"  semantic_class="phys_obj"  type="none"  np_form="defnp" />
+<markable id="markable_41" span="word_42" grammatical_role="other"  coref_class="empty"  mmax_level="coref"  agreement="other"  semantic_class="abstract"  type="none"  np_form="other" />
+<markable id="markable_42" span="word_44..word_45" grammatical_role="sbj"  coref_class="empty"  mmax_level="coref"  agreement="3f"  semantic_class="abstract"  type="none"  np_form="defnp" />
+<markable id="markable_60" span="word_103..word_107" grammatical_role="other"  coref_class="empty"  mmax_level="coref"  agreement="3m"  semantic_class="human"  type="none"  np_form="ne" />
+<markable id="markable_61" span="word_103..word_104" grammatical_role="other"  coref_class="empty"  mmax_level="coref"  agreement="3m"  semantic_class="human"  type="none"  np_form="ne" />
+<markable id="markable_43" span="word_50..word_52" grammatical_role="other"  coref_class="empty"  mmax_level="coref"  agreement="3f"  semantic_class="human"  type="none"  np_form="indefnp" />
+<markable id="markable_57" span="word_92..word_93" grammatical_role="other"  coref_class="empty"  mmax_level="coref"  agreement="3f"  semantic_class="phys_obj"  bridging_antecedent="markable_34"  ante_sub_bridging="part-whole"  type="bridging"  np_form="defnp" />
+<markable id="markable_58" span="word_96" grammatical_role="other"  coref_class="empty"  mmax_level="coref"  agreement="other"  semantic_class="abstract"  type="none"  np_form="other" />
+<markable id="markable_55" span="word_87..word_88" grammatical_role="other"  coref_class="empty"  mmax_level="coref"  agreement="3m"  semantic_class="abstract"  type="none"  np_form="defnp" />
+<markable id="markable_56" span="word_91..word_93" grammatical_role="sbj"  coref_class="empty"  mmax_level="coref"  agreement="3p"  semantic_class="phys_obj"  type="none"  np_form="indefnp" />
+<markable id="markable_59" span="word_99..word_101" grammatical_role="sbj"  coref_class="empty"  mmax_level="coref"  agreement="3n"  semantic_class="phys_obj"  type="none"  np_form="indefnp" />
+<markable id="markable_50" span="word_75" grammatical_role="other"  coref_class="empty"  mmax_level="coref"  agreement="other"  semantic_class="abstract"  type="none"  np_form="other" />
+<markable id="markable_53" span="word_84..word_88" grammatical_role="other"  coref_class="empty"  mmax_level="coref"  agreement="3f"  semantic_class="abstract"  type="none"  np_form="indefnp" />
+<markable id="markable_54" span="word_85..word_88" grammatical_role="other"  coref_class="empty"  mmax_level="coref"  agreement="3m"  semantic_class="abstract"  type="none"  np_form="defnp" />
+<markable id="markable_51" span="word_76..word_77" grammatical_role="obj"  coref_class="set_12"  mmax_level="coref"  agreement="3n"  semantic_class="phys_obj"  type="anaphoric"  ante_sub_anaphoric="is-a"  np_form="defnp" />
+<markable id="markable_52" span="word_82..word_88" grammatical_role="other"  coref_class="empty"  mmax_level="coref"  agreement="3f"  semantic_class="abstract"  type="none"  np_form="indefnp" />
+</markables>

@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<mmax_project>
+<sentences></sentences>
+<!--<turns>trainline20hd_turns.xml</turns>-->
+<words>trainline20hd_words.xml</words>
+<gestures></gestures>
+<keyactions></keyactions>
+</mmax_project>

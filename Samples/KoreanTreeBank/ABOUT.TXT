@@ -1,0 +1,2 @@
+This sample data is taken from the Penn Korean Treebank Project (http://www.cis.upenn.edu/%7Extag/koreantag/#Treebank). It has been automatically converted into MMAX2 format, incl. the POS and syntactic annotations. 
+Note that in order to use this sample, a Korean font has to be installed on your system. After loading the project, select this font via the 'Display' menu. Also, in order for the popup menus to work correctly, check the item 'Use display font in popups'.

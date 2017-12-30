@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<customization>
+<!--<rule pattern="!type={}" style="bold=true"/>-->
+<rule pattern="!type={frag}" style="bold=true"/>
+<rule pattern="polarity={positive}" style="foreground=green"/>
+<rule pattern="polarity={negative}" style="foreground=red"/>
+</customization>

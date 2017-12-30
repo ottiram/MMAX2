@@ -1,0 +1,27 @@
+This file describes some applications of the plugin MMAX2AnnotationDiffWindow. The focus will be on using the plugin for doing qualitative evaluation / error analysis of coreference resolution. 
+
+The tool can simultaneously visualize coreference chains of arbitrarily many compatible annotations of the same basedata. Two or more annotation are compatible only if they use the same annotation scheme, i.e. the same attribute names and types. In the following, the name 'coref_set' will be used as the name of the MARKABLE_SET attribute, and 'coref_level_1' 'coref_level_3' to as the names of 3 annotations to be compared. Note that this means that in order to be comparable in the AnnotationDiff window, the levels must have different names, a requirement that is not normally met. 
+
+For optimal visibility, markable handles (e.g. bold [square brackets]) should be defined for all levels to be compared. See the MMAX2 Style Sheet Guide for details.
+
+Also, different colors for both markable handles and chain drawing should be defined in the customization file as follows:
+
+<?xml version="1.0" encoding="UTF-8"?>
+<customization>
+<rule pattern="level_name={coref_level_1}" style="handles=red markable_set_line_color:coref=red"/>
+<rule pattern="level_name={coref_level_2}" style="handles=green m	arkable_set_line_color:coref=green"/>
+<rule pattern="level_name={coref_level_3}" style="handles=blue markable_set_line_color:coref=blue"/>
+</customization>
+
+The AnnotationDiffWindow is opened via the 'Open AnnotationDiff window' item in the Plugins menu. This menu contains one entry for each plugin defined in the file plugins.xml in the MMAX2 root directory. The class referenced in the plugin file has to be present in the classpath when MMAX2 is started!
+
+After the window has opened, do the following:
+1. From the menu 'Main level', select a markable level to compare one or more others against. 
+2. From the menu 'Added levels', use the item 'Add level' to add one or more compatible markable levels to compare.
+3. One column will be displayed for each level. In addition, the first two columns contain the span and the text of the markable in the current row.
+4. One row will be displayed for each markable in the *conjunction* of all different markables in the currently loaded levels. If a markable is missing on a particular level, the table cell contains a minus sign, if it is present, it contains a plus sign.
+5. From the menu 'Attributes', select the Set attribute 'coref_set'. The display will change to contain unique set identifiers instead of plus and minus signs. Minus signs will be substituted with NO MARKABLE, markables that are not members of the coref_set will have the value NO VALUE.
+6. Each set identifier in the table corresponds to a unique markable partition. Columns with identical set identifers mean that the annotations are identical. Note that the set identifiers are different from, and totally independent of, the individual coref set IDs found in the markable files! Identical set identifiers in a table row mean that the markable in the row has been assigned to the same set in all annotations in the respective row. 
+7. Left-clicking a cell in any of the columns headed ANNO_0 to ANNO_n will have the same effect as selecting the markable via left-click in the MMAX2 tool: The markable chain (if any) will be highlighted, and the markable's attributes will be displayed in the attribute window.
+8. More interesting is a shift-left click in the column with the markable text renditions. It will simultaneously highlight all (potentially different) sets that the respective markable appears in in any annotation. The colors used for the visualization will be the ones defined in the customization file above. At the same time, the corresponding cells in the STRING column will be highlighted in orange. Another shift-left click on a highlighted cell removes the respective chains from the display. Note that the rows to highlight in orange are determined as the *conjunction* of all partitions (i.e. set identifiers) in the row that was clicked. Rows that are only transitively linked to the set(s) in the current row are ignored.
+9. In order to remove a level from the display, right-click on the header of the table column displaying it. (Note: You might have to refresh the display afterwards by scrolling the table a bit.) The name of the file underlying a currently displayed column is available as a tool tip in the respective column header. 

@@ -1,0 +1,6 @@
+<!ELEMENT text ((sentence+) | (paragraph+))>
+<!ELEMENT sentence EMPTY>
+<!ATTLIST sentence id ID #REQUIRED>
+<!ATTLIST sentence span CDATA #REQUIRED>
+<!ELEMENT paragraph (sentence*)>
+<!ATTLIST paragraph id ID #REQUIRED>

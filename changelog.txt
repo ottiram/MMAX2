@@ -1,0 +1,14 @@
+Changes in 1.13.003b
+- Finally fixed line terminator problems in mmax2.sh. Apparently, I broke the earlier version be godiva before putting it into the previous release.
+
+Changes in 1.13.003
+- Fixed behaviour that caused annotations to be *always* set to dirty upon markable selection.
+- Some code cleanup: Moved static util methods to MMAX2Utils and static constants to MMAX2Constants
+- Improved Project Wizard: Can now handle arbitrarily many embedded tags of the same name
+- Fixed bug that caused an exception when the file path to the data folder contained a space character. This patch was contributed by Niklas Jakob.
+- Introduced a command line switch to suppress over-verbose console output at startup: -Dverbose="false"
+- Replaced mmax2.sh (did not work before due to wrong dos-style line terminators)  Thanks to godiva for the fix!
+
+Changes in 1.13.002
+- Fixed MarkableComparator issue which caused an exception when markables with non-integer IDs (created by base data editing) were processed
+- Moved AnnotationDiffWindow to external file

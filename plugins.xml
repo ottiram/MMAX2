@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<plugins>
+
+ <plugin name="Open AnnotationDiff window" class="plugins.mmax2annotationdiff.MMAX2AnnotationDiffWindow">
+ </plugin>
+
+</plugins>

@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<mmax_project>
+<!--<sentences>002_htc_text.xml</sentences>-->
+<turns></turns>
+<words>002_htc_words.xml</words>
+<gestures></gestures>
+<keyactions></keyactions>
+</mmax_project>

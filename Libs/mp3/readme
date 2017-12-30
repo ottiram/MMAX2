@@ -1,0 +1,9 @@
+For playback of MP3 files (and only for this purpose), MMAX2 has successfully used the following libraries. These libraries are released under the GPL resp. LGPL license. In order to avoid license problems, these libraries are *not* included with this distribution. They can be downloaded at the locations referenced below.
+
+MP3SPI Version 1.9.1 (mp3spi1.9.1.jar) (http://www.javazoom.net/mp3spi/sources.html)
+JLayer Version 0.4 (jl0.4.jar) (http://www.javazoom.net/javalayer/sources.html)
+Tritonus (tritonus_share.jar) (http://www.tritonus.org/tritonus_share.jar)
+
+Note that MMAX2 is *fully functional* without these libraries. 
+
+ 

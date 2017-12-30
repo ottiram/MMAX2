@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- Mark-Christoph Mueller, European Media Lab, Heidelberg, Germany (mueller@eml.org) -->
+
+<annotationscheme>
+
+<attribute id="turn_number" type="freetext" name="number">
+<value id="turn_number_value" name="number"/>
+</attribute>
+
+<attribute id="turn_speaker" type="nominal_button" name="speaker">
+<value id="turn_speaker_a" name="a"/>
+<value id="turn_speaker_b" name="b"/>
+</attribute>
+
+
+</annotationscheme>

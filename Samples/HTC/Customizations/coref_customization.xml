@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<customization>
+<!--<rule pattern="test={empty}" style="background=red"/>-->
+<rule pattern="{all}" style="foreground=blue"/>
+<rule pattern="!coref_class={empty}" style="italic=true"/>
+<rule pattern="type={bridging}" style="bold=true"/>
+<rule pattern="type={bridging};bridging_antecedent={empty}" style="background=magenta"/>
+<rule pattern="type={bridging};ante_sub_bridging={none}" style="background=magenta"/>
+</customization>
