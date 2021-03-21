@@ -559,15 +559,22 @@ public class MMAX2Utils {
 	public final static String condenseTargetSpan(String span)
 	{
 	    String result = "";
-	    ArrayList list = parseTargetSpan(span,";");        
+	    ArrayList list = parseTargetSpan(span,";");
 	    for (int b=0;b<list.size();b++)
 	    {
 	        String currentEntry = (String)list.get(b);
+//	        System.out.println(currentEntry);
 	        String currentNameSpace="";
+	        // Namespace (=level name) is expected before the id, separated by :
+	        // If present, it is the same for all markables in the span
 	        if (currentEntry.indexOf(":")!=-1)
 	        {
 	            // The current entry has a name space
+	        	// Identify
 	            currentNameSpace = currentEntry.substring(0,currentEntry.indexOf(":")+1);
+	            // and cut off
+	            currentEntry=currentEntry.substring(currentEntry.indexOf(":")+1);
+//		        System.out.println(currentEntry);
 	        }
 	        currentEntry = currentEntry.substring(currentEntry.indexOf("_")+1);
 	        if (b==0)
