@@ -219,7 +219,7 @@ public class MMAX2TextPane extends JTextPane implements AdjustmentListener, KeyL
     
     protected void finalize()
     {
-        System.err.println("TextPane is being finalized!");        
+//        System.err.println("TextPane is being finalized!");        
         try
         {
             super.finalize();

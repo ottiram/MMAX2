@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Mark-Christoph Müller
+ * Copyright 2007 Mark-Christoph Mï¿½ller
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,7 +80,7 @@ public class MarkableLevelControlPanel extends javax.swing.JPanel implements jav
        
     protected void finalize()
     {
-        System.err.println("MarkableLevelControlPanel is being finalized!");        
+//        System.err.println("MarkableLevelControlPanel is being finalized!");        
         try
         {
             super.finalize();

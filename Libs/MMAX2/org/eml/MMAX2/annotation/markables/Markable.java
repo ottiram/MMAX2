@@ -97,7 +97,7 @@ public final class Markable implements java.io.Serializable, MarkableAPI
                 // The current markable has a mmax_level attribute, but is different than
                 // the level name
                 ((Element)nodeRepresentation).setAttribute("mmax_level",level.getMarkableLevelName());
-                attributes.put("mmax_level", level.getMarkableLevelName());
+                attributes.put("mmax_level", level.getMarkableLevelName());               
                 level.setIsReadOnly(true);
             }
         }
@@ -109,9 +109,13 @@ public final class Markable implements java.io.Serializable, MarkableAPI
         if (singleFragments > 1) discontinuous = true;
                  
         /** Init arrays to have space for one left and right handle per fragment */
-        leftHandlePositions = new int[0];
-        rightHandlePositions = new int[0];
-    
+        // Mod Jan 8 2021: was '0'
+//        leftHandlePositions = new int[singleFragments];
+//        rightHandlePositions = new int[singleFragments];
+
+      leftHandlePositions = new int[0];
+      rightHandlePositions = new int[0];
+        
         /** Init arrays to have space for one start and one end position per fragment */
         displayStartPositions = new int[singleFragments];
         displayEndPositions = new int[singleFragments];                        
@@ -119,13 +123,15 @@ public final class Markable implements java.io.Serializable, MarkableAPI
         MarkableHelper.register(this,false);                       
     }
     
-    public final void clearMarkableHandles()
-    {
-        leftHandlePositions = null;
-        leftHandlePositions = new int[0];
-        rightHandlePositions = null;
-        rightHandlePositions = new int[0];
-    }
+    
+// Never used, remove Jan 8, 2021
+//    public final void clearMarkableHandles()
+//    {
+//        leftHandlePositions = null;
+//        leftHandlePositions = new int[0];
+//        rightHandlePositions = null;
+//        rightHandlePositions = new int[0];
+//    }
     
     /** This method is called on each markable after a change in the base data */
     public final void update(String[][] _fragments)
@@ -135,12 +141,15 @@ public final class Markable implements java.io.Serializable, MarkableAPI
         /** Set size attribute as number of single fragments. */
         singleFragments = fragments.length;
              
+        
         /** Set discontinuity convenience field */
         if (singleFragments > 1) discontinuous = true;
                  
         /** Init arrays to have space for one left and right handle per fragment */
-        leftHandlePositions = new int[singleFragments];
-        rightHandlePositions = new int[singleFragments];
+        /** WRONG: These arrays must be empty, unless handles ared added by style sheet**/
+        /** Mod on Jan 8th 2021: init with 0**/ 
+        leftHandlePositions = new int[0];
+        rightHandlePositions = new int[0];
     
         /** Init arrays to have space for one start and one end position per fragment */
         displayStartPositions = new int[singleFragments];
@@ -268,6 +277,7 @@ public final class Markable implements java.io.Serializable, MarkableAPI
   */  
     public final boolean addDiscourseElements(String[] addees)
     {
+//    	System.out.println(addees);
         ArrayList addeesAsList = new ArrayList();
         // Get list of MMAX2DiscourseElement objects to be added
         for (int z=0;z<addees.length;z++)
@@ -322,8 +332,10 @@ public final class Markable implements java.io.Serializable, MarkableAPI
             }
             MarkableHelper.removeDuplicateDiscoursePositions(DEsAsList);
         }
-        
+                
         update(MarkableHelper.toFragments(DEsAsList));               
+
+               
         level.setIsDirty(true,false);
         return true;
     }
@@ -390,6 +402,7 @@ public final class Markable implements java.io.Serializable, MarkableAPI
         return discourseElementStartPositions;
     }
     
+
     protected final void resetHandles()
     {
         leftHandlePositions = null;
@@ -640,17 +653,29 @@ public final class Markable implements java.io.Serializable, MarkableAPI
         
     public final Point getPoint()
     {
+    	// Point is the top left coord of the markable. If no handles are active, we use the display start position, else the
+    	// left handle position
+    	// Idea: Return both to allow drawing of relations in both directions??
         Point resultPoint = null;
         Rectangle tempRect = null;
+//        System.err.println("Getting point");
+//        System.err.println(displayStartPositions[0]);
+//        System.err.println(displayEndPositions[0]);
         try
         {
             if (leftHandlePositions.length==0)
             {
-                // New: use leftHandlePos as Point, if available
-                tempRect = level.getCurrentDiscourse().getMMAX2().getCurrentTextPane().modelToView(displayStartPositions[0]);
+//            	System.err.println("Using display info");
+            	// Use display pos if no handles are available
+            	// This is wrong: HandlePositions are currently initialized as a one-elem-array,
+            	// and so never have length 0
+            	// Changed: handlepositions are nowe inited with len 0 array
+            	tempRect = level.getCurrentDiscourse().getMMAX2().getCurrentTextPane().modelToView(displayStartPositions[0]);
             }
             else
             {
+//            	System.err.println("Using handle info");
+            	// else use left handle pos
                 tempRect = level.getCurrentDiscourse().getMMAX2().getCurrentTextPane().modelToView(leftHandlePositions[0]);
             }
         }
@@ -658,6 +683,8 @@ public final class Markable implements java.io.Serializable, MarkableAPI
         {
             System.out.println("Error with display position determination for Markable "+getID());
         }
+          
+//        System.out.println(tempRect);
         resultPoint = new Point((int)tempRect.getX(),(int)tempRect.getY());
         return resultPoint;
     }

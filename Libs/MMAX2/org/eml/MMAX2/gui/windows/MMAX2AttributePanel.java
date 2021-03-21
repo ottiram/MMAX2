@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Mark-Christoph Müller
+ * Copyright 2007 Mark-Christoph Mï¿½ller
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -184,7 +184,7 @@ public class MMAX2AttributePanel extends JPanel
             warnOnExtraAttributes.setFont(MMAX2.getStandardFont().deriveFont((float)9));
         }
         warnOnExtraAttributes.setToolTipText("Displays a message if undefined extra attributes are found on a Markable!");
-        warnOnExtraAttributes.setSelected(true);
+        warnOnExtraAttributes.setSelected(false);
         warnOnExtraAttributes.addMouseListener(
         new java.awt.event.MouseAdapter()
             {
@@ -214,6 +214,7 @@ public class MMAX2AttributePanel extends JPanel
                 
         for (int u=0;u<initialAttributes.length;u++)
         {
+//        	System.err.println(initialAttributes[u]);
             AttributeBox.add(initialAttributes[u]);
         }
         

@@ -22,9 +22,11 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -379,6 +381,7 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
     
     public final void setIsReadOnly(boolean status)
     {
+    	System.err.println("Setting readOnly to "+status+" for level"+this.getMarkableLevelName());
         readOnly = status;
         
     }    
@@ -643,7 +646,10 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
         }
         ((Element)node).setAttribute(new String("id"),new String(id));
         // Create new markable object from above parameters
-        Markable newMarkable = new Markable((Node)node,id,fragments,attributes,this);        
+        Markable newMarkable = new Markable((Node)node,id,fragments,attributes,this);
+
+//        System.out.println(fragments);
+        
         markableHash.put(id, newMarkable);
         MarkableHelper.setDisplayPositions(newMarkable);
         
@@ -777,14 +783,18 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
             /* This should be the normal case */
         	// 
             if (autoSaveMode) System.err.print("Auto-Save: ");
-            System.err.println("Filename "+destinationFile.getAbsolutePath()+" exists, creating backup (.bak) file!");
-            File oldDestinationFile = new File(this.markableFileName +".bak");
-            if (oldDestinationFile.exists())
-            {
-                System.err.println("Removing old .bak file!");
-                oldDestinationFile.delete();
-                oldDestinationFile = new File(markableFileName +".bak");
-            }
+            
+            System.err.println("Filename "+destinationFile.getAbsolutePath()+" exists, creating *timestamped* backup file!");
+            String timeStamp = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS").format(new Date());
+                        
+            File oldDestinationFile = new File(this.markableFileName +"."+timeStamp+".bak");
+
+//            if (oldDestinationFile.exists())
+//            {
+//                System.err.println("Removing old .bak file!");
+//                oldDestinationFile.delete();
+//                oldDestinationFile = new File(markableFileName +".bak");
+//            }            
             destinationFile.renameTo(oldDestinationFile);
         }                   
         
@@ -2072,7 +2082,7 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
     
     protected void finalize()
     {
-        System.err.println("MarkableLevel "+this.getMarkableLevelName()+" is being finalized!");        
+//        System.err.println("MarkableLevel "+this.getMarkableLevelName()+" is being finalized!");        
         try
         {
             super.finalize();

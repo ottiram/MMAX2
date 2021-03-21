@@ -124,10 +124,18 @@ public class MMAX2Attribute extends JPanel implements java.awt.event.ActionListe
     {            
         super();
         
+        Boolean compact=false;
+        if (compact)
+        {
+        	fontSize-=3;
+        }
+//        System.err.println(fontSize);
+        
+        
+        
         setAlignmentX(JPanel.LEFT_ALIGNMENT);
         
-        toShowInFlag = _toShowInFlag;
-        
+        toShowInFlag = _toShowInFlag;        
         dashed = _dashed;
         //setBorder(new EmptyBorder(0,0,1,1));
         // TODO: Support ordering for relation-type attributes

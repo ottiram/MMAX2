@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Mark-Christoph Müller
+ * Copyright 2007 Mark-Christoph MÃ¼ller
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,6 +61,8 @@ public class SimpleMarkableCustomization
         boolean regExpMatch = false;
         boolean matchAll = false;
                 
+//        boolean numMatch = false;
+        
         // Get names of all style-attributes to be applied in style-part of this customization
         Enumeration enum2 = attributes.getAttributeNames();
         // Iterate over them
@@ -95,6 +97,13 @@ public class SimpleMarkableCustomization
         {
             // Get next token, i.e. next part of pattern element
             String current = toki.nextToken().trim();
+//            if (current.startsWith("#"))
+//            {
+//                // The criterion starts with a #, so set to nummatch and cut off
+//                numMatch = true;
+//                current = current.substring(1).trim();
+//            }
+            
             if (current.startsWith("!"))
             {
                 // The criterion starts with a !, so negate and cut off
@@ -112,6 +121,7 @@ public class SimpleMarkableCustomization
                 regExpMatch = true;
                 current = current.substring(1).trim();
             }
+            
             String attributeName="";
             String valString ="";
             if (current.equalsIgnoreCase("{all}"))

@@ -362,7 +362,7 @@ public class MarkableChart
     {
         if (orderedLevels.length > 0)
         {
-            System.out.println("Remove temp selection");
+//            System.out.println("Remove temp selection");
             SimpleAttributeSet styleToUse = new SimpleAttributeSet();            
             // Problem: spaces between DiscourseElements remain highlighted, so first set everything to Color.white
             StyleConstants.setBackground(styleToUse,Color.white);
@@ -509,7 +509,7 @@ public class MarkableChart
     protected void finalize()
     {
         
-        System.err.println("MarkableChart is being finalized!");        
+//        System.err.println("MarkableChart is being finalized!");        
         try
         {
             super.finalize();

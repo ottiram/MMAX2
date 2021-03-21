@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Mark-Christoph Müller
+ * Copyright 2007 Mark-Christoph Mï¿½ller
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -244,6 +244,8 @@ public class MarkablePointer implements Renderable, MarkablePointerAPI
     
     public void addTargetMarkable(Markable _markable)
     {
+//    	System.out.println(_markable.getLeftmostDisplayPosition());
+//    	System.out.println(_markable.getRightmostDisplayPosition());
         if (_markable.getLeftmostDisplayPosition() < this.leftMostPosition)
         {
             this.leftMostPosition = _markable.getLeftmostDisplayPosition();
@@ -251,7 +253,9 @@ public class MarkablePointer implements Renderable, MarkablePointerAPI
         if (_markable.getRightmostDisplayPosition() > this.rightMostPosition)
         {
             this.rightMostPosition = _markable.getRightmostDisplayPosition();
-        }
+        }        
+//        System.out.println("LM "+this.leftMostPosition);
+//        System.out.println("RM "+this.rightMostPosition);        
         
         if (targetMarkables.contains(_markable)==false)
         {
@@ -300,6 +304,7 @@ public class MarkablePointer implements Renderable, MarkablePointerAPI
         individual set member Markables and the lines between them (if any.) */
     public final void select(Graphics2D graphics, MMAX2Document doc, Markable currentlySelectedMarkable)
     {        
+//    	System.out.println("Select Pointer");
         Markable temp = null;
         // Make sure the line points are up-to-date
         updateLinePoints();
@@ -334,6 +339,7 @@ public class MarkablePointer implements Renderable, MarkablePointerAPI
     
     public final void updateLinePoints()
     {
+//    	System.out.println("Source");
         Point currentPoint = sourceMarkable.getPoint();
         X_origin = (int)currentPoint.getX();
         Y_origin = (int)currentPoint.getY();
@@ -346,7 +352,9 @@ public class MarkablePointer implements Renderable, MarkablePointerAPI
         for (int z=0;z<size;z++)
         {
             // Get and store points of line
+//        	System.out.println("Target");
             currentPoint = ((Markable)targetMarkables.get(z)).getPoint();
+//            System.err.println(currentPoint);
             X_points[z] = (int)currentPoint.getX();
             Y_points[z] = (int)currentPoint.getY();
         }        

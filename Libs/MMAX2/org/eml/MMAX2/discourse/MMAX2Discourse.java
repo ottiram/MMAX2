@@ -259,7 +259,7 @@ public class MMAX2Discourse implements DiscourseAPI
     
     protected void finalize()
     {
-        System.err.println("MMAX2Discourse is being finalized!");        
+//        System.err.println("MMAX2Discourse is being finalized!");        
         try
         {
             super.finalize();

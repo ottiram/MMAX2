@@ -144,7 +144,7 @@ public class MarkableLevelControlWindow extends javax.swing.JFrame implements ja
     
     protected void finalize()
     {
-        System.err.println("MarkableLevelControlWindow is being finalized!");        
+//        System.err.println("MarkableLevelControlWindow is being finalized!");        
         try
         {
             super.finalize();

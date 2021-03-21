@@ -102,7 +102,7 @@ public class MarkableLevelRenderer
     
     protected void finalize()
     {
-        System.err.println("MarkableLevelRenderer is being finalized!");        
+//        System.err.println("MarkableLevelRenderer is being finalized!");        
         try
         {
             super.finalize();

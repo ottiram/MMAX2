@@ -33,6 +33,8 @@ import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
@@ -43,6 +45,7 @@ import java.util.StringTokenizer;
 
 import javax.swing.Box;
 import javax.swing.ButtonGroup;
+import javax.swing.ImageIcon;
 import javax.swing.JCheckBox;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JFileChooser;
@@ -57,6 +60,8 @@ import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JScrollPane;
 import javax.swing.JViewport;
 import javax.swing.KeyStroke;
+import javax.swing.Popup;
+import javax.swing.PopupFactory;
 import javax.swing.Timer;
 import javax.swing.text.DefaultStyledDocument;
 import javax.swing.text.SimpleAttributeSet;
@@ -80,6 +85,7 @@ import org.eml.MMAX2.gui.windows.MMAX2BatchPluginWindow;
 import org.eml.MMAX2.gui.windows.MMAX2MarkableBrowser;
 import org.eml.MMAX2.gui.windows.MMAX2MarkablePointerBrowser;
 import org.eml.MMAX2.gui.windows.MMAX2MarkableSetBrowser;
+import org.eml.MMAX2.gui.windows.MMAX2PopupWindow;
 import org.eml.MMAX2.gui.windows.MMAX2ProjectWizard;
 import org.eml.MMAX2.gui.windows.MMAX2QueryWindow;
 import org.eml.MMAX2.gui.windows.MMAXFileFilter;
@@ -92,10 +98,11 @@ import org.xml.sax.InputSource;
 
 public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.event.ComponentListener , java.awt.event.ActionListener
 {              		
+    private float selectedLineSpacing = (float)0.5;
+	private boolean askForValidation=true;
+	
     private boolean isBatchPluginMode=false;    
-        
     private int oneClickAnnotationGroupValue = 0;
-    
     private boolean commonPathWasSetViaConsole=false;
     
     private Timer waitCursorTimer = null;
@@ -146,7 +153,8 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
     private JPanel statusPanel = null;    
     private JLabel statusBar = null;
         
-    private static String versionString = "1.13.003";
+    //private static String versionString = "1.13.003";
+    private static String versionString = "1.14.005";
     
     // private, because accessed by get/set methods only
     private JScrollPane currentScrollPane = null;
@@ -214,6 +222,10 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
     private boolean isBasedataModified = false;
     
     public String currentWorkingDirectory="";
+    public String currentMMAX2FileName="";
+    
+    // Use this to store folder from which current annotation has been loaded, as a preset for the next loading action
+    public String currentAnnotationDirectory="";
     
     private String commonQueryPath="";
     
@@ -303,6 +315,8 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
         startWaitCursor();
         getCurrentDiscourse().reapplyStyleSheet();
         stopWaitCursor();
+        // Added Jan 8 2021: 
+        requestSetLineSpacing(this.selectedLineSpacing+"");
         requestRefreshDisplay();
     }                        
     
@@ -785,8 +799,34 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
     
     public void executeHotSpot(String hotSpotString)
     {
+//    	System.out.println(hotSpotString);
         String currentToken ="";
-        if (hotSpotString.startsWith("playwavsound"))
+
+        if (hotSpotString.startsWith("showpngimage"))
+        {
+            StringTokenizer toki = new StringTokenizer(hotSpotString," ");
+            String file = toki.nextToken();
+            file = toki.nextToken();
+
+            MMAX2PopupWindow popup = new MMAX2PopupWindow(file);
+            
+            int xPos = this.getCurrentTextPane().getCurrentMouseMoveEvent().getX();              
+            int yPos = this.getCurrentTextPane().getCurrentMouseMoveEvent().getY();
+            int currentScreenWidth 	= this.getScreenWidth();
+//            int currentScreenHeight = this.getScreenHeight();
+            int selectorWidth = popup.getWidth();
+            if ((xPos+this.getX()) > currentScreenWidth/2)
+            {
+                xPos = xPos-selectorWidth;
+            }
+//            System.out.println(currentScreenWidth+" "+currentScreenHeight+" "+ xPos + " "+ yPos);
+//            System.out.println(this.getCurrentViewport());
+//            popup.pack();
+            popup.show(this.getCurrentTextPane(),xPos,yPos );
+
+        
+        }        
+        else if (hotSpotString.startsWith("playwavsound"))
         {
             String file="";
             long offset = 0;
@@ -852,6 +892,11 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
                 z++;
                 // If true, cp will not be overwritten when loading a new file
                 mmax2.commonPathWasSetViaConsole = true;
+            }
+            // Jan. 6. 2021: Add switch to suppress validation option at startup
+            else if (args[z].equalsIgnoreCase("-no_validation"))
+            {
+                mmax2.askForValidation=false;
             }
             else if (args[z].startsWith("-")==false)
             {
@@ -1031,6 +1076,9 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
         currentWorkingDirectory = loader.getWorkingDirectory();
         if (verbose) System.err.println("Current working directory set to "+currentWorkingDirectory);
         
+        // Set 
+        currentAnnotationDirectory = new File(fileName).getParent();
+        
         if (verbose) System.err.println("done in "+(System.currentTimeMillis()-temp)+" milliseconds");
         /** Assign Discourse loaded by DiscourseLoader to MMAX2 instance. */
         currentDiscourse = loader.getCurrentDiscourse();
@@ -1052,10 +1100,12 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
 
         currentDiscourse.getCurrentMarkableChart().getCurrentLevelControlPanel().setStyleSheetFileNames(currentDiscourse.getStyleSheetFileNames());
         if (verbose) System.err.print("Creating Markable mappings ... ");
+
         temp = System.currentTimeMillis();        
         // Call to create e.g. DiscoursePositionToMarkableMappings
         currentDiscourse.getCurrentMarkableChart().createDiscoursePositionToMarkableMappings();
         currentDiscourse.getCurrentMarkableChart().setMarkableLevelDisplayPositions();
+        
         currentDiscourse.getCurrentMarkableChart().initMarkableRelations();        
         currentDiscourse.getCurrentMarkableChart().initAttributePanelContainer();
         currentDiscourse.getCurrentMarkableChart().initShowInMarkableSelectorPopupMenu();
@@ -1077,6 +1127,9 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
         {
         }
         setTitle("MMAX2 "+versionString+" "+fileName);
+        
+        currentMMAX2FileName=fileName;
+        
         updateIsAnnotationModified();
         
         autoSaveMenu.setEnabled(true);
@@ -1093,10 +1146,16 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
         showMLCPBox.setEnabled(true);
         currentDiscourse.getCurrentMarkableChart().initializeSaveMenu(saveLevelMenu);        
         
+        // Added 2021 January 31
+        requestSetLineSpacing(selectedLineSpacing+"");
+        
         arrangeWindows();
         requestRefreshDisplay();
         
-        showValidationRequestDialogWindow();
+        if (askForValidation)
+        {
+        	showValidationRequestDialogWindow();
+        }
         
         hintWindow = new MMAX2AnnotationHintWindow();
                         
@@ -1516,17 +1575,20 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
             final String currentLineSpacing = ((float)z/10)+"";
             temp = new JRadioButtonMenuItem(((float)z/10)+"");
             temp.setFont(MMAX2.getStandardFont());
-            if (z==0)
+            // New default: 0.5
+//            System.err.println(((float)((float)z/10)) +" "+ this.selectedLineSpacing);
+            if (((float)((float)z/10))==this.selectedLineSpacing)
             {
+//                System.err.println(z +" --> "+ this.selectedLineSpacing);            	
                 temp.setSelected(true);
             }
             temp.addActionListener(new ActionListener()
-        {
-            public void actionPerformed (ActionEvent ae)
             {
-                requestSetLineSpacing(currentLineSpacing);
-            }
-        });
+            	public void actionPerformed (ActionEvent ae)
+            	{
+            		requestSetLineSpacing(currentLineSpacing);
+            	}
+            });
             lineSpacingButtonGroup.add(temp);
             setLineSpacing.add(temp);
             temp=null;
@@ -1691,19 +1753,27 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
     
     public final void requestSetLineSpacing(String spacing)
     {       
-        float val = (float)0.0;
-        try
+        float val = (float) this.selectedLineSpacing;
+        if (spacing != "")
         {
-            val = Float.parseFloat(spacing);
-        }
-        catch (java.lang.NumberFormatException ex)
-        {
-            
+        	try
+        	{
+        		selectedLineSpacing=Float.parseFloat(spacing);
+        	}
+        	catch (java.lang.NumberFormatException ex)
+        	{
+        		
+        	}
         }
         
+        
+        
         SimpleAttributeSet result = new SimpleAttributeSet();
-        StyleConstants.setLineSpacing(result, (float)val);
-        getCurrentDocument().setParagraphAttributes(0, getCurrentDocument().getLength(),result, false);         
+        StyleConstants.setLineSpacing(result, selectedLineSpacing);
+        getCurrentDocument().setParagraphAttributes(0, getCurrentDocument().getLength(),result, false);
+
+        // Added 2021 Jan 31
+        requestRefreshDisplay();
     }
     
     public final void addShowInMarkableSelectorEntry(String levelName, ArrayList allValues)
@@ -1945,7 +2015,7 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
     private final void requestAboutWindow()
     {
         String message =  "This is version "+versionString+" of MMAX2. ";
-        message = message + "Copyright 2003-2010 Dr. Mark-Christoph Müller.\n";
+        message = message + "Copyright 2003-2021 Dr. Mark-Christoph MÃ¼ller.\n";
         message = message + "MMAX2 has originally been developed at the European Media Lab / EML Research, Heidelberg, Germany.";
         message = message + "\n\nProject home page: http://mmax2.net\n\n";
         message = message + "Contact:             contact@mmax2.net\n\n";
@@ -2251,6 +2321,7 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
         // Neither anno nor base data was dirty
         dismissAllMarkableSetBrowsers();
         dismissAllMarkableBrowsers();
+        System.out.println("Bye bye");
         System.exit(0);
     }
     
@@ -2312,7 +2383,6 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
         String requestedFileName = fileToLoad;
         loadMMAXFile(requestedFileName);
     }
-
     
     private final void requestLoadFile()
     {
@@ -2352,8 +2422,23 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
         dismissAllMarkableSetBrowsers();
         dismissAllMarkablePointerBrowsers();
         
-        String requestedFileName = "";
-        JFileChooser chooser = new JFileChooser(currentWorkingDirectory);
+//        String requestedFileName = "";
+        
+
+        if (currentAnnotationDirectory == "")
+        {
+        	currentAnnotationDirectory=currentWorkingDirectory;
+        }
+        	
+        //JFileChooser chooser = new JFileChooser(currentWorkingDirectory);
+        JFileChooser chooser = new JFileChooser(currentAnnotationDirectory);
+        
+        
+        if (currentMMAX2FileName != "")
+        {
+            chooser.setSelectedFile(new File(currentMMAX2FileName));        	
+        }
+
         chooser.setFileFilter(new MMAXFileFilter("mmax","MMAX2 annotation files"));
         int result = chooser.showOpenDialog(this);
         if (result == JFileChooser.APPROVE_OPTION)
@@ -2367,10 +2452,13 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
                 JOptionPane.showMessageDialog(null,"Note: MMAX2 will use the common paths file "+getCommonPathsFileName()+" supplied from the console!\nRestart the tool without the -common_paths argument to use the default common_paths.xml!","MMAX2 loader",JOptionPane.INFORMATION_MESSAGE);
             }
             
-            requestedFileName = chooser.getSelectedFile().getAbsolutePath();
-            System.out.println(requestedFileName);
+            File selectedFile = chooser.getSelectedFile();
+ //           .getAbsolutePath();
+//            System.out.println(requestedFileName);
+
+//            currentAnnotationDirectory = selectedFile.getParent();
             
-            loadMMAXFile(requestedFileName);
+            loadMMAXFile(selectedFile.getAbsolutePath());
         }                
     }
     
@@ -2599,7 +2687,7 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
     
     public void finalize()
     {
-        System.err.println("Finalizing MMAX2");
+//        System.err.println("Finalizing MMAX2");
         try
         {
             super.finalize();

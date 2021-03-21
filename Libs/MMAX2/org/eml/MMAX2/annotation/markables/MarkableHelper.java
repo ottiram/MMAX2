@@ -2196,7 +2196,7 @@ public class MarkableHelper
         return inString;
     }
     
-    /** This is used for matching queries with RegExp values. */
+    /** This is used for matching Markable queries with RegExp values. */
     public final static boolean matchesRegExp(Markable markable, String _attribute, String _value, int type, boolean _negated)
     {
         boolean negated = _negated;

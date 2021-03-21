@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Mark-Christoph Müller
+ * Copyright 2007 Mark-Christoph Mï¿½ller
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -189,6 +189,8 @@ public class MarkableRelation implements MarkableRelationAPI
     public final void createMarkablePointer(Markable sourceMarkable, MarkableLevel sourceMarkableLevel)
     {
         MarkablePointer newMarkablePointer = new MarkablePointer(sourceMarkable,lineWidth,lineColor,lineStyle,maxSize,this,dashed);
+//        System.err.println(sourceMarkableLevel.getMarkableLevelName());
+//        System.err.println(sourceMarkable.getID());
         ArrayList allTargetIDs = MMAX2Utils.parseTargetSpan(sourceMarkable.getAttributeValue(attributeName),";");
         for(int z=0;z<allTargetIDs.size();z++)
         {
@@ -201,13 +203,11 @@ public class MarkableRelation implements MarkableRelationAPI
             if (currentIDEntry.indexOf(":")!=-1)
             {
                 // If the target id has a name space
-                // Get that name space as new target levle name
+                // Get that name space as new target level name
                 currentTargetLevelName = currentIDEntry.substring(0,currentIDEntry.indexOf(":"));
                 currentTargetMarkableLevel = sourceMarkableLevel.getCurrentDiscourse().getMarkableLevelByName(currentTargetLevelName, false);
                 currentID=currentIDEntry.substring(currentIDEntry.indexOf(":")+1);
-            }
-            
-            
+            }          
             Markable currentTarget = sourceMarkableLevel.getCurrentDiscourse().getCurrentMarkableChart().getMarkableByID(currentID,currentTargetMarkableLevel);
             //Markable currentSatellite = (Markable) sourceMarkableLevel.getMarkableById((String)allSatelliteIDs.get(z));
             if (currentTarget != null)
@@ -216,7 +216,10 @@ public class MarkableRelation implements MarkableRelationAPI
             }
             else
             {
-                System.err.println("Markable "+currentID+" was not found");
+                System.out.println(currentID);
+                System.out.println(currentTargetLevelName);
+                System.out.println(currentTargetMarkableLevel);
+            	System.err.println("Markable "+currentID+" was not found");
             }
         }
         individualSets.put(new String(sourceMarkable.getID()),newMarkablePointer);        
