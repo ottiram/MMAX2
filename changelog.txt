@@ -1,4 +1,4 @@
-Changes in 1.13.003b
+ Changes in 1.13.003b
 - Finally fixed line terminator problems in mmax2.sh. Apparently, I broke the earlier version be godiva before putting it into the previous release.
 
 Changes in 1.13.003
