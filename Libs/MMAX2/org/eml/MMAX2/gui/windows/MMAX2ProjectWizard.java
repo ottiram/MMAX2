@@ -54,7 +54,6 @@ import javax.swing.text.SimpleAttributeSet;
 import org.eml.MMAX2.core.MMAX2;
 import org.eml.MMAX2.utils.MMAX2Utils;
 
-import sun.org.mozilla.javascript.internal.JavaScriptException;
 /**
  *
  * @author  mueller
