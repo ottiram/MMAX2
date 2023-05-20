@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Mark-Christoph M�ller
+ * Copyright 2021 Mark-Christoph Müller
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,6 +12,10 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License. */
+
+/*
+ * Re-worked handling of casing for attribute names and values (1.15)
+ */
 
 package org.eml.MMAX2.annotation.scheme;
 import java.awt.Color;
@@ -43,12 +47,11 @@ public class MMAX2Attribute extends JPanel implements java.awt.event.ActionListe
     private String ID;   
     /** Name of the Attribute this MMAX2Attribute controls, as supplied in the annotation scheme (for display purposes) */
     private String displayAttributeName;    
-    /** Name of the Attribute this MMAX2Attribute controls, set to lower (for matching purposes & writing to XML) */
-    private String lowerCasedAttributeName;            
+    
     /** Whether this Attribute is currently frozen. */
     private boolean frozen = false;    
     /** Number of options for this Attribute (for exclusive nominal attributes only). */
-    private int size;
+//    private int size;
     /** Reference to the AnnotationScheme object that this Attribute is defined in / part of */    
     private MMAX2AnnotationScheme annotationscheme;            
     /** Type of this Attribute: AttributeAPI.NOMINAL_BUTTON, AttributeAPI.NOMINAL_LIST, AttributeAPI.FREETEXT, AttributeAPI.MARKABLE_SET, AttributeAPI.MARKABLE_POINTER, ... */
@@ -56,10 +59,10 @@ public class MMAX2Attribute extends JPanel implements java.awt.event.ActionListe
     
     private String toShowInFlag="";
     
-    private int lineWidth;
-    private Color lineColor;
-    private int lineStyle;
-    private int maxSize;
+    private int 	lineWidth;
+    private Color 	lineColor;
+    private int 	lineStyle;
+    private int 	maxSize;
     
     private boolean dashed;
     private String add_to_markableset_instruction;
@@ -68,109 +71,99 @@ public class MMAX2Attribute extends JPanel implements java.awt.event.ActionListe
     private String merge_into_markableset_instruction;
     private String point_to_markable_instruction;
     private String remove_pointer_to_markable_instruction;    
-    private MarkableRelation markableRelation;
-    
-    private String targetDomain;
-    
+    private MarkableRelation markableRelation;    
+    private String targetDomain;    
     private UIMATypeMapping uimaTypeMapping;
     
-    // For type==NOMINAL_BUTTON
-    // JButton to be set when all buttons are to be unset
+    // For type==NOMINAL_BUTTON: JButton to be set when all buttons are to be unset
     JRadioButton invisibleButton;
     
-    // Contains at position x the string value of the button / list item at position x
-    // Used in getDefaultValue, getSelectedValue, setSelectedValue and getDefault
-    private ArrayList buttonIndicesToLowerCasedValueStrings;
+    // Contains at position x the string value of the button / list item at position x. Used in getDefaultValue, getSelectedValue, setSelectedValue and getDefault 
+    // TODO Value strings should not be lower-cased here, because we might need the returned values for display, and for this they need to have the correct casing
+    // DONE: This now contains the values as they are defined in the anno scheme
+    private ArrayList<String> valueIndicesToValueStrings;
+
+    /* Here, values are used as keys, so they need to be normalized */
+    /* For retrieving a button index for a value, the value can be lower-cased ad-hoc */
+    private Hashtable<String, Integer> lowerCasedValueStringsToValueIndices;
+    
+    // New 1.15: This maps a lower-cased value string (as key) to the correctly cased value string (as value)
+    // It is used for finding the correct value name in cases where values in stored annotations (legacy) do not conform to the spelling in the anno scheme
+    private Hashtable<String, String> lowerCasedValueStringsToValueStrings;
+    
     // Contains all buttons
-    private ArrayList buttons;
+    private ArrayList<JRadioButton> buttons;
     
     /* Contains on index c the 'next' value of the JRadioButton / ListItem at index c */
-    private ArrayList nextAttributes;
+    private ArrayList<String> nextAttributes;
     
-    private Hashtable lowerCasedValueStringsToButtonIndices;
     /* Groups the JRadioButtons for each SchemeLevel */
     ButtonGroup group = null;
 
     // For type==NOMINAL_LIST
-    private JComboBox listSelector = null;
-    
+    private JComboBox<String> listSelector = null;    
     // For type==FREETEXT
     JTextArea freetextArea;
     JScrollPane scrollPane;
-    
     // For type==MARKABLE_SET, MARKABLE_POINTER
-    JLabel idLabel;    
-    
+    JLabel idLabel;     	    
     JLabel attributeLabel;    
                
     public boolean isBranching = false;
     public boolean readOnly = false;
-
-    String tooltiptext;
-    
+    String tooltiptext;    
     public String oldValue = "";
     int currentIndex = -1;
     
     private String noneAvailableForValue = "<no hint available for this value>";
-//    private String noneAvailableForAttribute = "<no hint available for this attribute>";
     
-    private ArrayList dependsOn = new ArrayList();
-    
-    private ArrayList orderedValues = new ArrayList();
+    private ArrayList<MMAX2Attribute> dependsOn 	= new ArrayList<MMAX2Attribute>();    
+    private ArrayList<String> orderedValues = new ArrayList<String>();
     
     /** Creates new SchemeLevel. attributeName is in the original spelling (upper/lower case) as supplied in the annotation scheme. */
-    /* All attribute _values_ are stored and displayed in lowercase */
+    /* New in 1.15: Maintain casing for attributes and values, but make all comparisons case-insensitive */
     public MMAX2Attribute(String id, String attributeName, int _type, NodeList allChildren, MMAX2AnnotationScheme currentScheme, int width, String tiptext, String hintText, int _lineWidth, Color _color, int _lineStyle, int _maxSize, String _targetDomain, String _add_instruction, String _remove_instruction, String _adopt_instruction, String _merge_instruction, String _point_to_markable_instruction, String _remove_pointer_to_markable_instruction, float fontSize, boolean _dashed, String _toShowInFlag, UIMATypeMapping _uimaTypeMapping)
-    {            
-        super();
-        
-        Boolean compact=false;
-        if (compact)
-        {
-        	fontSize-=3;
-        }
-//        System.err.println(fontSize);
-        
-        
-        
+    {                                    
+        boolean compact = false;
+    	String compactVar = System.getProperty("compact");
+    	if (compactVar != null && compactVar.equalsIgnoreCase("true")) { compact = true; }
+        if (compact) { fontSize-=3;}
+                                                
         setAlignmentX(JPanel.LEFT_ALIGNMENT);
         
         toShowInFlag = _toShowInFlag;        
         dashed = _dashed;
-        //setBorder(new EmptyBorder(0,0,1,1));
         // TODO: Support ordering for relation-type attributes
         type = _type;        
-        // tiptext is the text on the 'text' attrbute on the attribute
+        // tiptext is the text on the 'text' attribute on the attribute
         // It should only be used for tooltips, and not for annotationhints
         tooltiptext = tiptext;        
         final String tempName = attributeName;
         final String tip = tooltiptext;
         final String tempHintText=hintText;
         
-        ID = id;
-        displayAttributeName = attributeName;
-        lowerCasedAttributeName = attributeName.toLowerCase();
-        size = 0;
-        annotationscheme = currentScheme;
-        lineWidth = _lineWidth;
-        lineColor = _color;
-        lineStyle = _lineStyle;
-        maxSize = _maxSize;
-        targetDomain = _targetDomain;
+        if (currentScheme.isVerbose()) {System.err.println("\n    Attribute '"+attributeName +"' (type "+type+"):");}
+                
+        ID 						= id;
+        displayAttributeName 	= attributeName;
+//        size 					= 0;
+        annotationscheme 		= currentScheme;
+        lineWidth 				= _lineWidth;
+        lineColor 				= _color;
+        lineStyle 				= _lineStyle;
+        maxSize 				= _maxSize;
+        targetDomain 			= _targetDomain;
         
-        add_to_markableset_instruction = _add_instruction;
-        remove_from_markableset_instruction = _remove_instruction;
-        adopt_into_markableset_instruction = _adopt_instruction;
-        merge_into_markableset_instruction = _merge_instruction;
-        
-        point_to_markable_instruction = _point_to_markable_instruction;
-        remove_pointer_to_markable_instruction = _remove_pointer_to_markable_instruction;
+        add_to_markableset_instruction 			= _add_instruction;
+        remove_from_markableset_instruction 	= _remove_instruction;
+        adopt_into_markableset_instruction 		= _adopt_instruction;
+        merge_into_markableset_instruction 		= _merge_instruction;        
+        point_to_markable_instruction 			= _point_to_markable_instruction;
+        remove_pointer_to_markable_instruction 	= _remove_pointer_to_markable_instruction;
                 
         // Init list of MMAX2Attributes this one points to, if any
-        nextAttributes = new ArrayList();      
-               
-        uimaTypeMapping = _uimaTypeMapping;
-        
+        nextAttributes = new ArrayList<String>();                     
+        uimaTypeMapping = _uimaTypeMapping;        
         String filler = "";
         for (int q=0;q<width+3;q++)
         {
@@ -179,30 +172,21 @@ public class MMAX2Attribute extends JPanel implements java.awt.event.ActionListe
         
         attributeLabel = new JLabel(displayAttributeName);     
         attributeLabel.setLayout(new FlowLayout(FlowLayout.LEADING,0,0));
-        if (MMAX2.getStandardFont() != null)
-        {
-            attributeLabel.setFont(MMAX2.getStandardFont().deriveFont((float)fontSize));
-        }
+        if (MMAX2.getStandardFont() != null) { attributeLabel.setFont(MMAX2.getStandardFont().deriveFont((float)fontSize)); }
+
+        // TODO Support different colors for different attribute labels
         attributeLabel.setForeground(Color.darkGray);               
-        if (tooltiptext.equals("")==false)
-        {
-            attributeLabel.setToolTipText(tooltiptext);
-        }
-        final MMAX2AnnotationScheme schemeCopy = currentScheme;                
+        if (tooltiptext.equals("")==false){ attributeLabel.setToolTipText(tooltiptext); }
+
+        final MMAX2AnnotationScheme schemeCopy = currentScheme;
+
         if (tempHintText.equals("")==false)
         {
             attributeLabel.addMouseListener(
             new java.awt.event.MouseAdapter()
             {
-                public void mouseEntered(java.awt.event.MouseEvent me)
-                {
-                    schemeCopy.showAnnotationHint(tempHintText,false,tempName);
-                }
-                public void mouseExited(java.awt.event.MouseEvent me)
-                {
-                    schemeCopy.hideAnnotationHint();
-                }
-
+                public void mouseEntered(java.awt.event.MouseEvent me) { schemeCopy.showAnnotationHint(tempHintText,false,tempName); }
+                public void mouseExited(java.awt.event.MouseEvent me) { schemeCopy.hideAnnotationHint(); }
                 public void mouseClicked(java.awt.event.MouseEvent me)
                 {
                     if (me.getButton()==java.awt.event.MouseEvent.BUTTON3)
@@ -218,10 +202,8 @@ public class MMAX2Attribute extends JPanel implements java.awt.event.ActionListe
         setAlignmentX(JComponent.LEFT_ALIGNMENT);
         setLayout(new FlowLayout(FlowLayout.LEADING,0,0));
 
-        /* Create left to right Box to accept label and (JRadioButtons or JComboBox) */
-                
-        Box innerBox = Box.createHorizontalBox();//
-                
+        /* Create left to right Box to accept label and (JRadioButtons or JComboBox) */                
+        Box innerBox = Box.createHorizontalBox();//                
         Box labelBox = Box.createVerticalBox();
         
         JPanel labelPanel = new JPanel();
@@ -234,21 +216,13 @@ public class MMAX2Attribute extends JPanel implements java.awt.event.ActionListe
         attributeLabel.addMouseListener(
         new java.awt.event.MouseAdapter()
             {
-                public void mouseEntered(java.awt.event.MouseEvent me)
-                {
-                    if (schemeCopy.getAttributePanel().getContainer().isHintToFront())
-                    {
-                        schemeCopy.annotationHintToFront();
-                    }
-                }
-                public void mouseExited(java.awt.event.MouseEvent me)
-                {
-                }
+                public void mouseEntered(java.awt.event.MouseEvent me) { if (schemeCopy.getAttributePanel().getContainer().isHintToFront()) { schemeCopy.annotationHintToFront(); }}
+                public void mouseExited(java.awt.event.MouseEvent me) { }
             });        
 
         labelPanel.add(attributeLabel);
-        
-        //labelBox.add(attributeLabel); //
+
+        // TODO Vary this to optimize layout
         labelBox.add(Box.createHorizontalStrut(120));
                         
         labelBox.add(labelPanel);//
@@ -261,43 +235,41 @@ public class MMAX2Attribute extends JPanel implements java.awt.event.ActionListe
         String tempText = "";
 
         JRadioButton currentButton = null;
-        invisibleButton = new JRadioButton();        
+        invisibleButton = new JRadioButton();
         group = new ButtonGroup();
         group.add(invisibleButton);                    
-        buttonIndicesToLowerCasedValueStrings = new ArrayList();
-        buttons = new ArrayList();
-        lowerCasedValueStringsToButtonIndices = new Hashtable();                
+        buttons = new ArrayList<JRadioButton>();
+
+        // TODO Can these be merged into one list, using index and direct lookup ?
+        valueIndicesToValueStrings = new ArrayList<String>();
+        lowerCasedValueStringsToValueIndices = new Hashtable<String, Integer>();                        
+
+        // New in 1.15
+        lowerCasedValueStringsToValueStrings = new Hashtable<String, String>();        
         
         /* Iterate over allChildren (i.e. <value> elements from <attribute> XML element) */
-        // This loop is processed once for every attribute, so no resetting of defaultIsBranching is required
         for (int z=0;z<allChildren.getLength();z++)
         {                        
             /* Get current child node */
-            currentNode = allChildren.item(z);
-            
+            currentNode = allChildren.item(z);           
+                        
             /* Only if current child is of type ELEMENT */
             if (currentNode.getNodeType() == Node.ELEMENT_NODE)
-            {                                                 
+            {          
+            	
+// begin tool tip stuff            	
+            	// text is used as content of the annotation hint window 
                 /* Try to extract value of 'text' attribute from <value> element */
-                try
-                {
-                    tempText = currentNode.getAttributes().getNamedItem("text").getNodeValue();
-                }
-                catch (java.lang.NullPointerException ex)
-                {
-                    tempText="";
-                }
-                
+                try { tempText = currentNode.getAttributes().getNamedItem("text").getNodeValue(); }
+                catch (java.lang.NullPointerException ex) { tempText=""; }               
+
+                // Get HTML file with anno hint content
                 String descFileName = "";
-                try
-                {
-                    descFileName = currentNode.getAttributes().getNamedItem("description").getNodeValue();
-                }
-                catch (java.lang.NullPointerException ex)
-                {
-                    
-                }
+                try { descFileName = currentNode.getAttributes().getNamedItem("description").getNodeValue();}
+                catch (java.lang.NullPointerException ex){ }
                 
+                // This will override any text supplied above!
+                // Get HTML content for anno hint
                 if (descFileName.equals("")==false)
                 {
                     String schemeFileName = annotationscheme.getSchemeFileName();
@@ -315,14 +287,8 @@ public class MMAX2Attribute extends JPanel implements java.awt.event.ActionListe
                             Node valueChild = (Node) valueChildren.item(q);
                             if (valueChild.getNodeName().equalsIgnoreCase("longtext"))
                             {
-                                try
-                                {
-                                    tempText = "<html>"+valueChild.getFirstChild().getNodeValue()+"</html>";
-                                }
-                                catch (java.lang.NumberFormatException ex)
-                                {
-                                    tempText="";
-                                }
+                                try { tempText = "<html>"+valueChild.getFirstChild().getNodeValue()+"</html>";}
+                                catch (java.lang.NumberFormatException ex) { tempText=""; }
                                 break;
                             }   
                         }
@@ -331,22 +297,12 @@ public class MMAX2Attribute extends JPanel implements java.awt.event.ActionListe
                 
                 if (tempText.equals(""))
                 {
-                    /* Try to extract value of 'id' attribute from <value> element */
-                    try
-                    {
-                        tempText = currentNode.getAttributes().getNamedItem("id").getNodeValue();
-                    }
-                    catch (java.lang.NullPointerException ex)
-                    {
-                    }
+                    /* Try to extract value of 'id' attribute from <value> element, as a last resort to display in anno hint window */
+                    try { tempText = currentNode.getAttributes().getNamedItem("id").getNodeValue(); }
+                    catch (java.lang.NullPointerException ex) { }
                 }
                                 
-                /* If attribute is there, but empty, use noneAvailableForValue */
-                if (tempText.equals("")) 
-                {                    
-                    // tempText = noneAvailableForValue;
-                }
-                else
+                if (tempText.equals("") == false)
                 {
                     // New February 18, 2005: Replace { with < and } with >
                     tempText = tempText.replaceAll("\\{","<");
@@ -356,165 +312,123 @@ public class MMAX2Attribute extends JPanel implements java.awt.event.ActionListe
                 /* Make final copy of current 'text' for use in ME */
                 final String currentText = tempText;                
                 /* Get 'name' of this <value> element */
-                try
+                try { currentValue = currentNode.getAttributes().getNamedItem("name").getNodeValue();}
+                catch (java.lang.NullPointerException ex) { System.out.println("Error: No 'name' attribute for <value> "+currentNode); }                
+                
+                // TODO Fix tooltip vs anno hint
+// end tool tip stuff
+                                                               
+                // Start handling actual attribute and values
+                // These two have a lot in common
+                if (type == AttributeAPI.NOMINAL_BUTTON || type == AttributeAPI.NOMINAL_LIST)
                 {
-                    currentValue = currentNode.getAttributes().getNamedItem("name").getNodeValue().toLowerCase();
+                    // NEW 1.15 : Add val name to list of ordered values (for oneclickanno) for this attribute
+                    orderedValues.add(currentValue);
+
+                    // Create mapping from lower-cased to correctly cased value string
+                    // This is used for retrieving, for a given value string, the correct value spelling
+                    lowerCasedValueStringsToValueStrings.put(currentValue.toLowerCase(), currentValue); 
+
+                    // Create mapping from val index to name of value at this index
+                    valueIndicesToValueStrings.add(currentValue);
+                    // TODO Replace size with e.g. len(ordered values)
+                    //lowerCasedValueStringsToValueIndices.put(currentValue.toLowerCase(), size);
+                    // This should map the first value to index 0
+                    lowerCasedValueStringsToValueIndices.put(currentValue.toLowerCase(), lowerCasedValueStringsToValueIndices.size());
+                    
+                    /* Get value of 'next' attribute */
+                    try { nextValue = currentNode.getAttributes().getNamedItem("next").getNodeValue(); }
+                    catch (java.lang.NullPointerException ex) { nextValue =""; }
+
+                    // There is a next value associated with the current possible value. So this attribute is branching.
+                    if (nextValue.equals("")==false) 
+                    {
+                    	isBranching = true;
+                    	if (currentScheme.isVerbose()) { System.err.println("     "+currentValue +" --> "+nextValue); }
+                    }
+                    else
+                    {
+                    	if (currentScheme.isVerbose()) { System.err.println("     "+currentValue);}
+                    }
+                    /* Store 'next' value of Button c at position c (this might be empty!) */
+                    nextAttributes.add(nextValue);
+//                    size++;
                 }
-                catch (java.lang.NullPointerException ex)
-                {
-                    System.out.println("Error: No 'name' attribute for <value> "+currentNode);
-                }
-                
-                // NEW: Add to list of ordered values (for oneclickanno)
-                orderedValues.add(currentValue);
-                
-                /* Make final copy of value for use in ME */
-                final String valueName = currentValue;
-                
+                	
                 if (type == AttributeAPI.NOMINAL_BUTTON)
-                {
-                    /* Create one JRadioButton for each value (lower cased !) */                    
+                {                    
+                    /* Create one JRadioButton for each value, using correct spelling */
                     currentButton = null;
                     currentButton = new JRadioButton(currentValue);
-                    if (MMAX2.getStandardFont() != null)
-                    {
-                        currentButton.setFont(MMAX2.getStandardFont().deriveFont((float)fontSize));  
-                    }
+                    if (MMAX2.getStandardFont() != null) { currentButton.setFont(MMAX2.getStandardFont().deriveFont((float)fontSize));}
+                    currentButton.addActionListener(this);
                     
-                    final String currentAtt=displayAttributeName+":"+currentValue;
-                    
-                    /* Set tool tip */
+                    /* Tell button which number it is (-1 because it was added to the list already) */
+                    currentButton.setActionCommand(lowerCasedValueStringsToValueIndices.size()-1+"");
+                    /* Store Button itself */
+                    buttons.add(currentButton);
+                    //                    
+                    // Handle anno hint stuff
+                    final String currentAtt=displayAttributeName+":"+currentValue;                   
+                    /* Set anno hint text */
                     if (currentText.equals(noneAvailableForValue)==false)
                     {
-                        currentButton.addMouseListener(
+                    	// New 1.15
+                    	currentButton.setToolTipText(currentText);                    	
+                        currentButton.addMouseListener( 
                         new java.awt.event.MouseAdapter()
                         {
-                            public void mouseEntered(java.awt.event.MouseEvent me)
-                            {
-                                schemeCopy.showAnnotationHint(currentText,false,currentAtt);
-                            }
-                            public void mouseExited(java.awt.event.MouseEvent me)
-                            {
-                                schemeCopy.hideAnnotationHint();
-                            }
-                            
+                            public void mouseEntered(java.awt.event.MouseEvent me) { schemeCopy.showAnnotationHint(currentText,false,currentAtt); }
+                            public void mouseExited(java.awt.event.MouseEvent me) { schemeCopy.hideAnnotationHint(); }                            
                             public void mouseClicked(java.awt.event.MouseEvent me)
                             {
                                 if (me.getButton()==java.awt.event.MouseEvent.BUTTON3)
                                 {
-//                                    System.err.println("Lock");
                                     schemeCopy.showAnnotationHint(currentText,true,currentAtt);
                                     return;
                                 }
                             }
-                        }                                        
+                        }
                         );
                     }
-                    else
-                    {
-                        currentButton.setToolTipText(currentText);    
-                    }
-                    /* Add action listener */
-                    currentButton.addActionListener(this);
-                    
-                    /* Map lower-cased value string to (0-based) index of JRadioButton in this SchemeLevel */
-                    /* This makes it possible to retrieve the name from the index of the button */
-                    buttonIndicesToLowerCasedValueStrings.add(currentValue);
-                    /* Map index to name of value */
-                    /* This makes it possible to retrieve the button index from the lower-cased value name */
-                    lowerCasedValueStringsToButtonIndices.put(new String(currentValue),new Integer(size)); 
-                    /* Tell button which number it is */
-                    currentButton.setActionCommand(new String(size+""));
-                    /* Store Button itself */
-                    buttons.add(currentButton);
-                
-                    /* Get value of 'next' attribute */
-                    try
-                    {
-                        nextValue = currentNode.getAttributes().getNamedItem("next").getNodeValue();
-                    }
-                    catch (java.lang.NullPointerException ex)
-                    {
-                        nextValue ="";
-                    }
 
-                    /* Set this to non-initial if 'next' attribute is present and non-empty for current possible value */
-                    if (nextValue.equals("")==false)
-                    {
-                        // There is a next value associated with the current possible value
-                        // So this attribute is branching
-                        isBranching = true;
-                    }
-                                        
                     /* Add button to ButtonGroup, so selection is mutually exclusive */
                     group.add(currentButton);
-                    /* Add button to display, so button is visible */
-                    
+                    /* Add button to display, so button is visible */                    
                     buttonBox.add(currentButton);
-                    
-                    /* Store 'next' value of Button c at position c (this may be empty!) */
-                    nextAttributes.add(nextValue);
-                    /* Increase size only afterwards */
-                    size++;
                 }//type = button
   
                 else if (type == AttributeAPI.NOMINAL_LIST)
-                {
+                {                                        
                     /* Init listSelector */
                     if (listSelector == null) 
                     {
-                        listSelector = new JComboBox();
-                        if (MMAX2.getStandardFont() != null)
-                        {
-                            listSelector.setFont(MMAX2.getStandardFont().deriveFont((float)fontSize));
-                        }
+                        listSelector = new JComboBox<String>();
+                        if (MMAX2.getStandardFont() != null) { listSelector.setFont(MMAX2.getStandardFont().deriveFont((float)fontSize)); }
                     }
-                                        
-                    /* Map lower-cased value string to index of list entry in this SchemeLevel */
-                    buttonIndicesToLowerCasedValueStrings.add(currentValue);
-                    /* Map index of list entry to value name */
-                    lowerCasedValueStringsToButtonIndices.put(new String(currentValue),new Integer(size)); 
-
+                                                            
                     listSelector.addItem(currentValue);
-                    // item = null;
-                                                        
-                    /* Get value of 'next' attribute */
-                    try
-                    {
-                        nextValue = currentNode.getAttributes().getNamedItem("next").getNodeValue();
-                    }
-                    catch (java.lang.NullPointerException ex)
-                    {
-                        nextValue ="";
-                    }
-
-                    /* Set this to non-initial if 'next' attribute is present for current possible value*/
-                    if (nextValue.equals("")==false)
-                    {
-                        isBranching = true;
-                    }
-                                        
                     /* Add JComboBox to display only once */
-                    if (listSelector.getItemCount()==1)
-                    {
-                        buttonBox.add(listSelector);
-                    }
-                    /* Store 'next' value of list entry at c at position c (this may be empty!) */
-                    nextAttributes.add(nextValue);
-                    size++;
+                    if (listSelector.getItemCount()==1) { buttonBox.add(listSelector); }
                 }//type = button
                                 
                 else if (this.type == AttributeAPI.FREETEXT)
                 {
-                    /* type = freetext */
-                    freetextArea = new JTextArea(1,10);
+                	/* type = freetext */
+                	int ft_cols = 10;    	
+                	try { ft_cols = Integer.parseInt(System.getProperty("freetext_field_columns")); }
+                	catch (java.lang.NullPointerException | java.lang.NumberFormatException ex) {}
+                	int ft_font_inc = 0;
+                	try { ft_font_inc = Integer.parseInt(System.getProperty("freetext_font_increase")); }
+                	catch (java.lang.NullPointerException | java.lang.NumberFormatException ex) {}
+                	                	
+                    freetextArea = new JTextArea(1,ft_cols);
                     freetextArea.getDocument().addDocumentListener(this);
                     freetextArea.setLineWrap(false);
                     freetextArea.setWrapStyleWord(true);
-                    if (MMAX2.getStandardFont() != null)
-                    {
-                        freetextArea.setFont(MMAX2.getStandardFont().deriveFont((float)fontSize));
-                    }
+                    //if (MMAX2.getStandardFont() != null) { freetextArea.setFont(MMAX2.getStandardFont().deriveFont((float)fontSize)); }
+                    if (MMAX2.getStandardFont() != null) { freetextArea.setFont(MMAX2.getStandardFont().deriveFont((float)fontSize+ft_font_inc)); }                    
+
                     scrollPane = new JScrollPane(freetextArea);
                     scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
                     scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
@@ -528,80 +442,80 @@ public class MMAX2Attribute extends JPanel implements java.awt.event.ActionListe
                     if (idLabel == null)
                     {
                         idLabel = new JLabel(MMAX2.defaultRelationValue);
-                        if (MMAX2.getStandardFont() != null)
-                        {
-                            idLabel.setFont(MMAX2.getStandardFont().deriveFont((float)fontSize));                       
-                        }
+                        if (MMAX2.getStandardFont() != null) { idLabel.setFont(MMAX2.getStandardFont().deriveFont((float)fontSize));}
                         idLabel.setEnabled(false);
                         buttonBox.add(idLabel);
                     }
-                    // New: Make pointer relations branching as well
+                                        
                     /* Get value of 'next' attribute */
-                    try
-                    {
-                        nextValue = currentNode.getAttributes().getNamedItem("next").getNodeValue();
-                    }
-                    catch (java.lang.NullPointerException ex)
-                    {
-                        nextValue ="";
-                    }
+                    try { nextValue = currentNode.getAttributes().getNamedItem("next").getNodeValue(); }
+                    catch (java.lang.NullPointerException ex) { nextValue =""; }
 
-                    /* Set this to non-initial if 'next' attribute is present for current possible value*/
-                    if (nextValue.equals("")==false)
+                    // There is a next value associated with the current possible value. So this attribute is branching.
+                    if (nextValue.equals("")==false) 
                     {
-                        isBranching = true;
-                    }
-
-                    /* Store 'next' value of list entry at c at position c (this may be empty!) */
+                    	isBranching = true;
+                    	if (currentScheme.isVerbose()) { System.err.println("      --> "+nextValue); }                    	
+                    }                                                            
+                    /* Store 'next' value of Button c at position c (this might be empty!) */
                     nextAttributes.add(nextValue);
-                    size++;
+                    
                 }
                 else if (type == AttributeAPI.MARKABLE_SET)
                 {
                     /* type = markable_SET */
+                	/* TODO Make sets branching as well ... */
                     idLabel = new JLabel(MMAX2.defaultRelationValue);
-                    if (MMAX2.getStandardFont() != null)
-                    {
-                        idLabel.setFont(MMAX2.getStandardFont().deriveFont((float)fontSize));                    
-                    }
+                    if (MMAX2.getStandardFont() != null) { idLabel.setFont(MMAX2.getStandardFont().deriveFont((float)fontSize));}
                     idLabel.setEnabled(false);
                     buttonBox.add(idLabel);
-                }
-                
+                }                              
             }//ELEMENT_NODE
         }// for z
         
-        if (listSelector != null) listSelector.addActionListener(this);
-        if (isBranching)
+        if (type == AttributeAPI.NOMINAL_BUTTON || type == AttributeAPI.NOMINAL_LIST)
         {
-            attributeLabel.setText("< > "+attributeLabel.getText());
+        	if (currentScheme.isDebug()) System.err.println("     Name mappings:            "+ lowerCasedValueStringsToValueStrings);
+        	if (currentScheme.isDebug()) System.err.println("     Index to String mappings: "+ valueIndicesToValueStrings);
+        	if (currentScheme.isDebug()) System.err.println("     String to Index mappings: "+ lowerCasedValueStringsToValueIndices);
         }
         
+        if (listSelector != null) listSelector.addActionListener(this);
+        if (isBranching) { attributeLabel.setText("< > "+attributeLabel.getText()); }        
         innerBox.add(buttonBox);
-        //buttonBox.add(innerBox);
-        this.add(innerBox);
+        this.add(innerBox); 
     }
         
-    public final String getDisplayAttributeName()
+    public final String getNormalizedValueName(String name)
+    {
+    	if (type == AttributeAPI.NOMINAL_BUTTON || type == AttributeAPI.NOMINAL_LIST)
+    	{
+    		return this.lowerCasedValueStringsToValueStrings.get(name.toLowerCase());
+    	}
+    	else
+    		{ return name; }
+    }
+    
+    public final String getDisplayName()
     {
         return displayAttributeName;
     }
     
-    public final ArrayList getOrderedValues()
+    public final ArrayList<String> getOrderedValues()
     {
         return orderedValues;
     }
-    
+        
     public final MMAX2Attribute[] getDirectlyDependentAttributes()
     {
-        MMAX2Attribute[] result = null;
-        ArrayList temp = new ArrayList();
+        ArrayList<MMAX2Attribute> temp = new ArrayList<MMAX2Attribute>();
         if (type == AttributeAPI.NOMINAL_BUTTON || type == AttributeAPI.NOMINAL_LIST || type==AttributeAPI.MARKABLE_POINTER)
         {
             // Iterate over all possible values defined for this attribute
             for (int z=0;z<nextAttributes.size();z++)
             {
                 String nextVal = (String) nextAttributes.get(z);
+                // next attribute *IDs* come as they are specified in the next attributes in the scheme file
                 if (nextVal.equals("")==false)
                 {
                     /* Parse String into List of Ids */
@@ -609,19 +523,14 @@ public class MMAX2Attribute extends JPanel implements java.awt.event.ActionListe
                     /* Iterate over all IDs found */
                     for (int p=0;p<tempresult.size();p++)
                     {
-                        MMAX2Attribute currentAttrib = (MMAX2Attribute) annotationscheme.getAttributeByID((String) tempresult.get(p));                        
+                    	// New 1.15: Lowercase ids found in next attribute before lookup 
+                        MMAX2Attribute currentAttrib = (MMAX2Attribute) annotationscheme.getAttributeByID(((String) tempresult.get(p)).toLowerCase() );                        
                         if (currentAttrib != null)
                         {                                                    
                             /* Add each Attribute to result only once */                               
-                            if (temp.contains(currentAttrib)==false)
-                            {
-                                temp.add(currentAttrib);
-                            }
+                            if (temp.contains(currentAttrib)==false) { temp.add(currentAttrib); }
                         }
-                        else
-                        {
-                            System.err.println("Attribute "+(String) tempresult.get(p)+" not found!");
-                        }
+                        else { System.err.println("Dependent attribute "+(String) tempresult.get(p)+" not found!"); }
                     }                    
                 }
             }
@@ -705,13 +614,14 @@ public class MMAX2Attribute extends JPanel implements java.awt.event.ActionListe
         return markableRelation;
     }
     
-    /** This method returns the (lower cased) default value for this attribute */
+    /** This method returns the correctly cased default value for this attribute */
+    // New 1.15: Values for NOMINAL_* are not lower-cased any more
     public String getDefaultValue()
     {
         String result = "";
         if (type == AttributeAPI.NOMINAL_BUTTON)
         {
-            result = (String) buttonIndicesToLowerCasedValueStrings.get(0);
+            result = (String) valueIndicesToValueStrings.get(0);
         }
         else if (type == AttributeAPI.NOMINAL_LIST)
         {
@@ -752,27 +662,24 @@ public class MMAX2Attribute extends JPanel implements java.awt.event.ActionListe
     {
         return maxSize;
     }
-    
+
+        
     /** This handler is called upon the selection of a button or a box menu item on this Attribute. */
     public void actionPerformed(java.awt.event.ActionEvent p1) 
     {
-        
+//    	System.err.println(p1);
         /* Do nothing if the action was initiated automatically */
-        if (annotationscheme.ignoreClick) 
-        {
-            return;
-        }
+        if (annotationscheme.ignoreClick)  { return; }
                         
         if (type == AttributeAPI.NOMINAL_BUTTON)        
         {            
             // The attribute is rendered as a list of RadioButtons, so get index of clicked button, communicated through actionCommand
-            int position = new Integer(p1.getActionCommand()).intValue();
-     
+        	// index should be 0-based
+            int position = Integer.parseInt(p1.getActionCommand());
+            System.err.println(position);
+            System.err.println(currentIndex);
             // Ignore if current value is clicked again
-            if (position == currentIndex)
-            {
-                return;
-            }
+            if (position == currentIndex) { return; }            
             currentIndex = position;
             // A selection always resets any freezing 
             setIsFrozen(false,"");
@@ -783,11 +690,8 @@ public class MMAX2Attribute extends JPanel implements java.awt.event.ActionListe
         {
             // The attribute is rendered as a drop down list, so get index of selected item
             int position = listSelector.getSelectedIndex();
-            // Ignore is current value is chosen again
-            if (position == currentIndex)
-            {
-                return;
-            }
+            // Ignore if current value is chosen again
+            if (position == currentIndex) { return; }
             currentIndex = position;            
             // A selection always resets any freezing
             setIsFrozen(false,"");
@@ -800,11 +704,10 @@ public class MMAX2Attribute extends JPanel implements java.awt.event.ActionListe
     public MMAX2Attribute[] getNextAttributes(boolean toDefault)
     {
         MMAX2Attribute[] result = new MMAX2Attribute[0];
-        
         // A frozen level does not point to any valid next levels
         if (frozen) return result;
         
-        ArrayList tempresult = new ArrayList();      
+        ArrayList<String> tempresult; // = new ArrayList();      
         int selIndex = -1;
         if (getType() == AttributeAPI.NOMINAL_BUTTON || getType() == AttributeAPI.NOMINAL_LIST)
         {
@@ -814,26 +717,20 @@ public class MMAX2Attribute extends JPanel implements java.awt.event.ActionListe
         else if (getType() == AttributeAPI.MARKABLE_POINTER)
         {
             String currentValue = getSelectedValue();
-            if (currentValue.equalsIgnoreCase(MMAX2.defaultRelationValue))
-            {
-                selIndex = 0;
-            }
-            else
-            {
-                selIndex = 1;
-            }
+            if (currentValue.equalsIgnoreCase(MMAX2.defaultRelationValue))  { selIndex = 0; }
+            else 															{ selIndex = 1; }
         }
         else if (getType() == AttributeAPI.MARKABLE_SET || getType()== AttributeAPI.FREETEXT)
         {
             return result;
         }
-        else
-        {
-            System.out.println("Error: Unknown attribute type! "+getLowerCasedAttributeName());
-            return result;            
-        }
+//        else
+//        {
+//            System.out.println("Error: Unknown attribute type! "+getDisplayAttributeName());
+//            return result;            
+//        }
             
-        /* Get String of next attributes this points to */
+        /* Get String of next attributes this points to (might be empty) */
         String nextString = (String) nextAttributes.get(selIndex);
         if (nextString.equals("")==false)
         {
@@ -843,20 +740,14 @@ public class MMAX2Attribute extends JPanel implements java.awt.event.ActionListe
             /* Iterate over all IDs found */
             for (int p=0;p<tempresult.size();p++)
             {
-                /* Add each Attribute to result */                               
-                result[p] = (MMAX2Attribute) annotationscheme.getAttributeByID((String) tempresult.get(p));
+                /* Add each Attribute to result, using the lower-cased id as key */                               
+                result[p] = (MMAX2Attribute) annotationscheme.getAttributeByID(((String) tempresult.get(p)).toLowerCase());
                 /* Reset to default */
                 if (result[p] != null)
                 {
-                    if (toDefault) 
-                    {
-                        ((MMAX2Attribute)result[p]).toDefault();
-                    }
+                    if (toDefault) { ((MMAX2Attribute)result[p]).toDefault(); }
                 }
-                else
-                {
-                    System.err.println("No Attribute with ID "+(String)tempresult.get(p)+"!");
-                }
+                else { System.err.println("No Attribute with ID "+(String)tempresult.get(p)+"!"); }
             }
         }        
         return result;
@@ -870,8 +761,10 @@ public class MMAX2Attribute extends JPanel implements java.awt.event.ActionListe
         int index=-1;
         if (type == AttributeAPI.NOMINAL_BUTTON)
         {
-            JRadioButton currentButton=null;        
-            for (int p=0;p<this.size;p++)
+            JRadioButton currentButton=null;
+            
+            //for (int p=0;p<this.size;p++)
+            for (int p=0;p<this.lowerCasedValueStringsToValueIndices.size();p++)
             {
                 currentButton = (JRadioButton) buttons.get(p);
                 if (currentButton.isSelected())
@@ -887,7 +780,7 @@ public class MMAX2Attribute extends JPanel implements java.awt.event.ActionListe
         }
         else
         {
-            System.err.println("getSelectedIndex not legal for attribute "+this.attributeLabel.getText());
+            System.err.println("getSelectedIndex not applicable for attribute "+this.attributeLabel.getText());
         }
         return index;
     }
@@ -896,22 +789,22 @@ public class MMAX2Attribute extends JPanel implements java.awt.event.ActionListe
     /* This method returns the value string associated with the currently selected JRadioButton/list item, or empty string */
     public String getSelectedValue()
     {
-        if (frozen) 
-        {
-            return "";
-        }
+        if (frozen)  { return ""; }
         
         String value = "";
         JRadioButton currentButton=null;
 
         if (this.type == AttributeAPI.NOMINAL_BUTTON)
         {
-            for (int p=0;p<this.size;p++)
+        	
+            //for (int p=0;p<this.size;p++)
+        	for (int p=0;p<this.lowerCasedValueStringsToValueIndices.size();p++)
             {
                 currentButton = (JRadioButton) buttons.get(p);
                 if (currentButton.isSelected())
                 {
-                    value=((String) buttonIndicesToLowerCasedValueStrings.get(p));
+                	// Fixed for 1.15: This now returns the value string in the correct case
+                    value=((String) valueIndicesToValueStrings.get(p));
                     break;
                 }
             }
@@ -919,42 +812,36 @@ public class MMAX2Attribute extends JPanel implements java.awt.event.ActionListe
         else if (this.type == AttributeAPI.NOMINAL_LIST)
         {
             value = (String) listSelector.getSelectedItem();
-        }
-        
+        }        
         else if (this.type == AttributeAPI.FREETEXT)
         {
-            try
-            {
-                value = freetextArea.getText();
-            }
-            catch (java.lang.NullPointerException ex)
-            {
-                value = "";
-            }            
+            try 										{ value = freetextArea.getText(); }
+            catch (java.lang.NullPointerException ex) 	{ value = ""; }            
             
             value.trim();                        
             
-            /* Clean string for XML storage */
-            String tempresult = "";
-            String currentChar = "";
-            for (int z=0;z<value.length();z++)
-            {
-                currentChar = value.substring(z,z+1);
-                if (currentChar.equals("\"")) currentChar = "'";
-                else if (currentChar.equals("�")) currentChar = "ae";
-                else if (currentChar.equals("�")) currentChar = "ue";
-                else if (currentChar.equals("�")) currentChar = "oe" ;               
-                else if (currentChar.equals("�")) currentChar = "AE";
-                else if (currentChar.equals("�")) currentChar = "UE";
-                else if (currentChar.equals("�")) currentChar = "OE" ;               
-                else if (currentChar.equals("<")) currentChar = "";
-                else if (currentChar.equals(">")) currentChar = "";
-                else if (currentChar.equals("�")) currentChar = "ss";
-                else if (currentChar.equals("\n")) currentChar = " ";
-                
-                tempresult = tempresult + currentChar;                
-            }
-            value = tempresult.trim();                          
+//            /* Clean string for XML storage */
+//            String tempresult = "";
+//            String currentChar = "";
+//            for (int z=0;z<value.length();z++)
+//            {
+//                currentChar = value.substring(z,z+1);
+//                if (currentChar.equals("\"")) currentChar = "'";
+//                else if (currentChar.equals("ä")) currentChar = "ae";
+//                else if (currentChar.equals("ü")) currentChar = "ue";
+//                else if (currentChar.equals("ö")) currentChar = "oe" ;               
+//                else if (currentChar.equals("Ä")) currentChar = "AE";
+//                else if (currentChar.equals("Ü")) currentChar = "UE";
+//                else if (currentChar.equals("Ö")) currentChar = "OE" ;               
+//                else if (currentChar.equals("<")) currentChar = "";
+//                else if (currentChar.equals(">")) currentChar = "";
+//                else if (currentChar.equals("ß")) currentChar = "ss";
+//                else if (currentChar.equals("\n")) currentChar = " ";
+//                
+//                tempresult = tempresult + currentChar;                
+//            }
+//            value = tempresult.trim();      
+//            System.err.println(value);
             
         }
         else if (type == AttributeAPI.MARKABLE_SET)
@@ -972,21 +859,22 @@ public class MMAX2Attribute extends JPanel implements java.awt.event.ActionListe
         For attributes of type freetext or id, it sets the value to desiredValue.
         It returns true if the value was found, false otherwise. For attributes of type id and freetext, 
         result is always true, because no constraints can exist for these attributes.  FIXME
-        If desiredValue is a null String, index 0 is set. */
-    // desiredValue must be lowercase !!!!! 
+        If desiredValue is a null String, index 0 is set. */ 
     // NEW: if ignore = false, calling this will be equivalent to actually clicking the attribute
     // (Used for oneclickAnnotation and set_values, which is the only case where ignore = false
     public boolean setSelectedValue(String desiredValue, boolean ignore)
     {        
+    	System.err.println(desiredValue);
         boolean result = false;
-        int buttonPosition =0;
+        int buttonPosition = 0;
         int itemPosition = -1;
         
         if (type == AttributeAPI.NOMINAL_BUTTON)
         {        
             if (desiredValue == null || desiredValue.equals("") )
             {
-                // Value is null or empty, so set to default with ignore = true               
+                // Value is null or empty, so set to default with ignore = true
+            	// This can only happen programmatically 
                 setSelectedIndex(0);
                 result = true;               
             }
@@ -996,7 +884,12 @@ public class MMAX2Attribute extends JPanel implements java.awt.event.ActionListe
                 try
                 {
                     /* Get index of JRadioButton to set, if any */
-                    buttonPosition = ((Integer) lowerCasedValueStringsToButtonIndices.get(desiredValue)).intValue();
+                	// New 1.15
+                    //buttonPosition = ((Integer) lowerCasedValueStringsToButtonIndices.get(desiredValue)).intValue();
+                	// before lookup of value, normalize it to the spelling that is known by
+//                 	String normVal = lowerCasedValueStringsToValueStrings.get(desiredValue.toLowerCase());
+                    //buttonPosition = ((Integer) lowerCasedValueStringsToValueIndices.get(lowerCasedValueStringsToValueStrings.get(desiredValue.toLowerCase()))).intValue();
+                    buttonPosition = lowerCasedValueStringsToValueIndices.get(desiredValue.toLowerCase());
                 }
                 catch (java.lang.NullPointerException ex)
                 {
@@ -1009,20 +902,11 @@ public class MMAX2Attribute extends JPanel implements java.awt.event.ActionListe
                 /* Only if a button was found */
                 if (buttonPosition != -1)
                 {
-                    if (ignore)
-                    {
-                        setSelectedIndex(buttonPosition);
-                    }
-                    else
-                    {                    
-                        ((JRadioButton) buttons.get(buttonPosition)).doClick();
-                    }
+                    if (ignore) 	{ setSelectedIndex(buttonPosition); }
+                    else 			{ ((JRadioButton) buttons.get(buttonPosition)).doClick(); }
                     result = true;
                 }
-                else
-                {
-                    System.err.println("Error: Value "+desiredValue+" not found on attribute "+displayAttributeName+"!");
-                }
+                else { System.err.println("Error: Value "+desiredValue+" not found on attribute "+displayAttributeName+"!"); }
             }// else
         }
         else if (type == AttributeAPI.NOMINAL_LIST)
@@ -1039,8 +923,9 @@ public class MMAX2Attribute extends JPanel implements java.awt.event.ActionListe
                 {
                     /* Get index of JRadioButton to set, if any */
                     for (int z=0;z<listSelector.getItemCount();z++)
-                    {
-                        if (desiredValue.equalsIgnoreCase((String)listSelector.getItemAt(z)))
+                    {   
+                        // New 1.15. Now we can even use equals() because the casing MUST be identical
+                        if (lowerCasedValueStringsToValueStrings.get(desiredValue.toLowerCase()).equals((String)listSelector.getItemAt(z)))
                         {
                             itemPosition = z;
                             break;
@@ -1058,61 +943,37 @@ public class MMAX2Attribute extends JPanel implements java.awt.event.ActionListe
                 /* Only if a button was found */
                 if (itemPosition != -1)
                 {
-                    if (ignore)
-                    {
-                        annotationscheme.ignoreClick = true;                        
-                    }
+                    if (ignore) { annotationscheme.ignoreClick = true;}
                     listSelector.setSelectedIndex(itemPosition);
                     annotationscheme.ignoreClick = false;
                     currentIndex = itemPosition;
                     result = true;
                 }
-                else
-                {
-                    System.err.println("Error: Value "+desiredValue+" not found on attribute "+this.displayAttributeName+"!");
-                }
+                else { System.err.println("Error: Value "+desiredValue+" not found on attribute "+this.displayAttributeName+"!"); }
             }// else
         }
         
         else if (type == AttributeAPI.FREETEXT)
         {
-            if (desiredValue != null)
-            {
-                freetextArea.setText(desiredValue);
-            }
-            else
-            {
-                freetextArea.setText("");
-            }
-            annotationscheme.ignoreClick = false; // HERE
+//        	System.err.println(desiredValue);        	
+            if (desiredValue != null) { freetextArea.setText(desiredValue); }
+            else { freetextArea.setText(""); }
+            annotationscheme.ignoreClick = false;
             result = true;
         }
         else if (type == AttributeAPI.MARKABLE_SET)
         {
-            if (desiredValue != null && desiredValue.equals("")==false && desiredValue.equals(MMAX2.defaultRelationValue)==false)
-            {
-                idLabel.setText(desiredValue);
-            }
-            else
-            {
-                idLabel.setText(MMAX2.defaultRelationValue);
-            }
+            if (desiredValue != null && desiredValue.equals("")==false && desiredValue.equals(MMAX2.defaultRelationValue)==false) { idLabel.setText(desiredValue); }
+            else 																												  { idLabel.setText(MMAX2.defaultRelationValue); }
             result = true;
         }
         else if (type == AttributeAPI.MARKABLE_POINTER)
         {
-            if (desiredValue != null && desiredValue.equals("")==false && desiredValue.equals(MMAX2.defaultRelationValue)==false)
-            {
-                idLabel.setText(MMAX2Utils.condenseTargetSpan(desiredValue));
-            }
-            else
-            {
-                idLabel.setText(MMAX2.defaultRelationValue);
-            }
+            if (desiredValue != null && desiredValue.equals("")==false && desiredValue.equals(MMAX2.defaultRelationValue)==false) { idLabel.setText(MMAX2Utils.condenseTargetSpan(desiredValue)); }
+            else 																											      { idLabel.setText(MMAX2.defaultRelationValue); }
             result = true;
         }
-        
-        return result;            
+                return result;            
     }
     
     public final void addDependsOn(MMAX2Attribute attrib)
@@ -1174,8 +1035,9 @@ public class MMAX2Attribute extends JPanel implements java.awt.event.ActionListe
     {
         /* No support for id type necessary */
         if (this.type == AttributeAPI.NOMINAL_BUTTON)
-        {
-            for (int o=0;o<this.size;o++)
+        {        	
+            //for (int o=0;o<this.size;o++)
+            for (int o=0;o<lowerCasedValueStringsToValueIndices.size();o++)
             {
                 ((JRadioButton) buttons.get(o)).setEnabled(status);
                 if (this.readOnly) ((JRadioButton) buttons.get(o)).setEnabled(false);
@@ -1202,8 +1064,7 @@ public class MMAX2Attribute extends JPanel implements java.awt.event.ActionListe
             annotationscheme.ignoreClick = false;
             // NEW February 17, 2005: 
             // Make sure currentIndex is updated at setDefault
-            currentIndex = 0;
-            
+            currentIndex = 0;            
         } 
         if (type == AttributeAPI.NOMINAL_LIST)
         {
@@ -1287,10 +1148,12 @@ public class MMAX2Attribute extends JPanel implements java.awt.event.ActionListe
     
     public boolean isDefined(String value)
     {
-        /* Constraints exist for nominal attributes only !! */
+        /* Constraints exist for nominal attributes only !! */    	
         if (type == AttributeAPI.NOMINAL_BUTTON || type == AttributeAPI.NOMINAL_LIST)
         {
-            return buttonIndicesToLowerCasedValueStrings.contains(value);
+            //return buttonIndicesToValueStrings.contains(value);
+        	// New 1.15
+        	return lowerCasedValueStringsToValueStrings.containsKey(value.toLowerCase());
         }
         // MODIFIED March 22, 2005: This used to default to true
         else if (type == AttributeAPI.FREETEXT)
@@ -1300,48 +1163,20 @@ public class MMAX2Attribute extends JPanel implements java.awt.event.ActionListe
         }
         else if (type == AttributeAPI.MARKABLE_SET)
         {
-            if (value.equalsIgnoreCase("empty")==true)
-            {
-                return true;
-            }
-            else if (value.equalsIgnoreCase("initial")==true)
-            {
-                return true;
-            }
-            else if (value.equalsIgnoreCase("final")==true)
-            {
-                return true;
-            }            
-            else
-            {
-                return false;
-            }            
+            if (value.equalsIgnoreCase("empty")==true) 			{ return true; }
+            else if (value.equalsIgnoreCase("initial")==true)	{ return true; }
+            else if (value.equalsIgnoreCase("final")==true) 	{ return true; }            
+            else 												{ return false; }            
         }
         else if (type == AttributeAPI.MARKABLE_POINTER)
         {
-            if (value.equalsIgnoreCase("empty")==true)
-            {
-                return true;
-            }
-            else if (value.equalsIgnoreCase("target")==true)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+            if (value.equalsIgnoreCase("empty")==true) 			{ return true; }
+            else if (value.equalsIgnoreCase("target")==true) 	{ return true; }
+            else 												{ return false; }
         }
-        else
-        {
-            return false;
-        }
+        else { return false; }
     }
-
-    public final String getLowerCasedAttributeName()
-    {
-        return this.lowerCasedAttributeName;
-    }
+    
     public final String getID()
     {
         return ID;
@@ -1351,16 +1186,17 @@ public class MMAX2Attribute extends JPanel implements java.awt.event.ActionListe
     {
         return this.isBranching;
     }
+
     public final boolean getIsFrozen()
     {
         return this.frozen;
     }
+
     public final boolean getIsReadOnly()
     {
         return this.readOnly;
     }
-    
-    
+        
     public void setIsFrozen(boolean status, String illegalValue)
     {
         if (status == true)

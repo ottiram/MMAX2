@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Mark-Christoph M�ller
+ * Copyright 2021 Mark-Christoph Müller
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,18 +100,18 @@ public class MarkableLevelRenderer
     }
     
     
-    protected void finalize()
-    {
-//        System.err.println("MarkableLevelRenderer is being finalized!");        
-        try
-        {
-            super.finalize();
-        }
-        catch (java.lang.Throwable ex)
-        {
-            ex.printStackTrace();
-        }        
-    }
+//    protected void finalize()
+//    {
+////        System.err.println("MarkableLevelRenderer is being finalized!");        
+//        try
+//        {
+//            super.finalize();
+//        }
+//        catch (java.lang.Throwable ex)
+//        {
+//            ex.printStackTrace();
+//        }        
+//    }
     
     
     public final int getCustomizationCount()
@@ -377,6 +377,7 @@ public class MarkableLevelRenderer
                     tempM = (Markable) level.getCurrentDiscourse().getMarkableAtDisplayAssociation(((Integer)allHandlePositions[q]).intValue());                    
                     // Get attribute dependent style for current markable
                     markableAttributes = tempM.getAttributedependentStyle();
+                    System.err.println(markableAttributes);
                     // Get attribute-dependent color from associated markable, if any is defined
                     if (markableAttributes.isDefined("handles"))
                     {

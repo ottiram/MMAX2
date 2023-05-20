@@ -1,2 +1,10 @@
 *.class
 *.DS_Store
+.metadata
+*.prefs
+*.bak
+.gitignore
+.classpath
+.project
+Arrau-todo.txt
+Libs/MMAX2/image.svg

@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Mark-Christoph Müller
+ * Copyright 2007 Mark-Christoph Mï¿½ller
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -2377,7 +2377,7 @@ public class MMAX2QueryWindow extends javax.swing.JFrame implements java.awt.eve
                     currentAnte = list1.getElementAtIndexFromColumnToUse(a).getMarkable();
                 }
                 
-                // Get id of set that curent ante is in, if any
+                // Get id of set that current ante is in, if any
                 setValue=currentAnte.getAttributeValue(attribute,"empty");
                 if (setValue.equals("empty")==false)
                 {       
@@ -7410,14 +7410,14 @@ public class MMAX2QueryWindow extends javax.swing.JFrame implements java.awt.eve
                 {
                     continue;
                 }
-                if (tempList.contains(attribs[b].getLowerCasedAttributeName())==false)
+                if (tempList.contains(attribs[b].getDisplayName())==false)
                 {
-                    if (attributesToConsider == null || attributesToConsider.contains(attribs[b].getLowerCasedAttributeName()))
+                    if (attributesToConsider == null || attributesToConsider.contains(attribs[b].getDisplayName()))
                     {
                         // Collect all different attribute names in list
-                        tempList.add(attribs[b].getLowerCasedAttributeName());
+                        tempList.add(attribs[b].getDisplayName());
                         // Create mapping from name to attribute object 
-                        namesToAttributeObjectsHash.put(attribs[b].getLowerCasedAttributeName(),attribs[b]);
+                        namesToAttributeObjectsHash.put(attribs[b].getDisplayName(),attribs[b]);
                     }
                 }
             }
@@ -7519,6 +7519,7 @@ public class MMAX2QueryWindow extends javax.swing.JFrame implements java.awt.eve
         // Create attribute table header
         sep = sep +"|    N(all): |   %(all): ||    N(app): |   %(app): ||";
         // Add first line
+        // Leave lc since used as key
         allLinesForCurrentAttribute.add(" "+currentAttribute.toUpperCase()+ " "+((MMAX2Attribute)namesToAttributeObjectsHash.get(((String)currentAttribute.toLowerCase()))).decodeAttributeType());
         // Add separator
         allLinesForCurrentAttribute.add(sep);        
@@ -7587,6 +7588,7 @@ public class MMAX2QueryWindow extends javax.swing.JFrame implements java.awt.eve
         // Create attribute table header
         sep = sep +"| Size(all): |   %(all): || Size(set): |   %(set): || Size(app): |   %(app): ||";
         // Add first line
+        // Leave lc since used as key
         allLinesForCurrentAttribute.add(" "+currentAttribute.toUpperCase()+ " "+((MMAX2Attribute)namesToAttributeObjectsHash.get(((String)currentAttribute.toLowerCase()))).decodeAttributeType());
         // Add separator
         allLinesForCurrentAttribute.add(sep);        
@@ -7691,6 +7693,7 @@ public class MMAX2QueryWindow extends javax.swing.JFrame implements java.awt.eve
         // Create attribute table header
         sep = sep +"|    N(all): |   %(all): ||    N(set): |   %(set): ||    N(app): |   %(app): ||";
         // Add first line
+        // Leave lc since used as key
         allLinesForCurrentAttribute.add(" "+currentAttribute.toUpperCase()+ " "+((MMAX2Attribute)namesToAttributeObjectsHash.get(((String)currentAttribute.toLowerCase()))).decodeAttributeType());
         // Add separator
         allLinesForCurrentAttribute.add(sep);        

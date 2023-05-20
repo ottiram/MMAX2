@@ -26,6 +26,8 @@ import org.apache.oro.text.regex.Perl5Matcher;
 import org.eml.MMAX2.annotation.query.MMAX2MatchingCriterion;
 import org.eml.MMAX2.annotation.query.MMAX2QueryResultTuple;
 import org.eml.MMAX2.annotation.query.MMAX2QueryResultTupleElement;
+import org.eml.MMAX2.annotation.scheme.MMAX2AnnotationScheme;
+import org.eml.MMAX2.annotation.scheme.MMAX2Attribute;
 import org.eml.MMAX2.api.AttributeAPI;
 import org.eml.MMAX2.discourse.MMAX2Discourse;
 import org.eml.MMAX2.discourse.MMAX2DiscourseElement;
@@ -44,13 +46,13 @@ public class MarkableHelper
         
     }
     
-    public static void sort(ArrayList markables, Comparator comp)
+    public static void sort(ArrayList<Markable> markables, Comparator<Markable> comp)
     {
         if (comp != null)
         {
             Markable[] tempArray =  (Markable[])markables.toArray(new Markable[0]);;
             java.util.Arrays.sort(tempArray,comp);
-            ArrayList newTemp =  new ArrayList(java.util.Arrays.asList(tempArray));
+            ArrayList<Markable> newTemp =  new ArrayList<Markable>(java.util.Arrays.asList(tempArray));
             markables.clear();
             markables.addAll(newTemp);            
         }
@@ -1604,46 +1606,6 @@ public class MarkableHelper
         return getSpan(m1Frags).equalsIgnoreCase(getSpan(m2Frags));        
     }
 
-    /*
-    public static boolean equalFragmentsBak(String[][] m1Frags, String[][] m2Frags)
-    {
-        boolean result = true;
-        if (m1Frags.length == m2Frags.length)
-        {
-            // Only if both have the same number of fragments
-            // Iterate over all fragments
-            for (int z=0;z<m1Frags.length;z++)
-            {
-                String[] currentM1Frag = m1Frags[z];
-                String[] currentM2Frag = m2Frags[z];
-                if (currentM1Frag.length == currentM2Frag.length)
-                {
-                    // The current fragments have the same length
-                    if (currentM1Frag[0].equalsIgnoreCase(currentM1Frag[0])==false)
-                    {
-                        // They do not have the same initial element
-                        // So not equal, and break
-                        result=false;
-                        break;
-                    }
-                }
-                else
-                {
-                    // The current fragments are not the same length
-                    // So not equal and break
-                    result = false;
-                    break;
-                }
-            }
-        }
-        else
-        {
-            // Different number of fragments, so not equal and break
-            result = false;
-        }
-        return result;
-    }
-    */
     
     public static boolean equals(Markable m1, Markable m2)    
     {
@@ -1811,10 +1773,7 @@ public class MarkableHelper
         }        
         return result;
     }    
-    
-    
-    
-    /** This method  */
+           
     public static final void register(Markable markable, boolean updateHash)
     {
         // Get reference to markable level once
@@ -1825,14 +1784,11 @@ public class MarkableHelper
         markable.size = 0;
         String[] currentFragment = null;
         int currentFragmentLength=0;                
-        Node currentDENode = null;
-        String currentDE = "";
-        
+        Node currentDENode = null;        
         boolean currentIsInvalid = false;
         boolean currentHasBeenAdded = false;
         
-        ArrayList currentFragmentsDEs = null;
-        
+        ArrayList<String> currentFragmentsDEs = null;        
         StringBuffer buffer = new StringBuffer();
         
         String[][] fragments = markable.getFragments();
@@ -1844,7 +1800,7 @@ public class MarkableHelper
             currentFragmentLength = currentFragment.length;
             
             // Create empty list to accept 
-            currentFragmentsDEs = new ArrayList();
+            currentFragmentsDEs = new ArrayList<String>();
             
             // Sum over number of all fragments for size attribute            
             markable.size = markable.size + currentFragmentLength;            
@@ -1853,27 +1809,21 @@ public class MarkableHelper
             for (int o=0;o<currentFragmentLength;o++)
             {
                 // Get Node representation of current DE
-                currentDENode = level.getCurrentDiscourse().getDiscourseElementNode(currentFragment[o]);                                                
-                
-                
+                currentDENode = level.getCurrentDiscourse().getDiscourseElementNode(currentFragment[o]);                                
                 if (o==0)
                 {
-                    // The current DE is the first in a fragment                                                                                        
-                        
+                    // The current DE is the first in a fragment                                                                                                                
                     {
                         // current is valid, so use currentDENode (i.e. on index o) as valid node
-                        level.registerMarkableAtStartOfFragment(currentFragment[o],markable);
-  
+                        level.registerMarkableAtStartOfFragment(currentFragment[o],markable);  
                         // Add DE to list of valid ones for this fragment
                         currentFragmentsDEs.add(currentDENode.getFirstChild().getNodeValue());
                         currentHasBeenAdded = true;                        
                     }
-                }
-                                                                
+                }                                                                
                 if (o==currentFragmentLength-1)
                 {
-                    // The current DE is the last in its fragment
-                                        
+                    // The current DE is the last in its fragment                                        
                     {
                         level.registerMarkableAtEndOfFragment(currentFragment[o],markable);
                         // The current DE is valid
@@ -2116,70 +2066,45 @@ public class MarkableHelper
         markable.leftmostDisplayPosition = markable.displayStartPositions[0];
         markable.rightmostDisplayPosition = markable.displayEndPositions[markable.singleFragments-1];
     }
-    /*
-    public final static String transposeMarkable(Markable toTranspose, String oldLang, ArrayList absoluteWords)
-    {
-        String string = toXMLElement(toTranspose);
-        String leftPart = string.substring(0,string.indexOf("span=\""));
-        String rightPart = string.substring(string.indexOf("span=\"")+5);
-        rightPart = rightPart.substring(rightPart.indexOf(" "));
-        string = leftPart+ "span=\""+getTransposedSpan(getSpan(toTranspose),oldLang,absoluteWords)+"\""+rightPart;
-        return string;
-    }
-    */
-/*    
-    public final static String getTransposedSpan(String oldSpan, String oldLang, ArrayList absoluteWords)
-    {
-        // This assumes that markables are NOT discontinuous! 
-        
-        // Convert old span to full array of arrays of word ids.
-        String[][] fullSpan = parseSpan(oldSpan);      
-        
-        ArrayList temp = new ArrayList();
-        String entireTransposedSpan="";
-        // Iterate over full span elements
-        for (int b=0;b<fullSpan.length;b++)
-        {
-            // Get current span
-            String[] currentSpan = fullSpan[b];
-            String currentTransposedSpan="";
-            int currentPos=0;
-            if (currentSpan.length==1)
-            {
-                currentPos = absoluteWords.indexOf(oldLang+":"+currentSpan[0])+1;
-                currentTransposedSpan="word_"+currentPos;
-            }
-            else
-            {
-                currentPos = absoluteWords.indexOf(oldLang+":"+currentSpan[0])+1;
-                currentTransposedSpan="word_"+currentPos+"..word_";
-                currentPos = absoluteWords.indexOf(oldLang+":"+currentSpan[currentSpan.length-1])+1;
-                currentTransposedSpan=currentTransposedSpan+currentPos;
-            }
-            entireTransposedSpan=entireTransposedSpan+","+currentTransposedSpan;
-        }
-        return entireTransposedSpan.substring(1);
-    }    
-   */ 
-    /** This method converts this Markable into an XML String representation for file storage. */
-    public final static String toXMLElement(Markable markable)
+
+    /** This method converts this Markable into an XML String representation for file storage. 
+     * @param mmax2AnnotationScheme  is used for normalizing attributes and values for file writing */
+    public final static String toXMLElement(Markable markable, MMAX2AnnotationScheme mmax2AnnotationScheme)
     {
         String xmlstring = "<markable";
         xmlstring=xmlstring+" id=\""+markable.getID()+"\"";
         xmlstring=xmlstring+" span="+"\""+getSpan(markable)+"\"";
-        Set allattribs = markable.attributes.keySet();
+        Set<String> allattribs = markable.attributes.keySet();
         Object[] keys = allattribs.toArray();
         String key = "";
         String value = "";
         for (int i=0;i<keys.length;i++)
         {            
             key = (String) keys[i];
-            if (key.compareToIgnoreCase("id")==0)
-            {
-                continue;
-            }
-            value = (String) markable.attributes.get((String) keys[i]);
+            if (key.equalsIgnoreCase("id")) { continue; }
+            value = (String) markable.attributes.get(key);
+            MMAX2Attribute att = null;            
+            if (key.equalsIgnoreCase("mmax_level")==false) 
+            { 
+                System.err.println(key+" --> "+value);
+            	att = mmax2AnnotationScheme.getAttributeByName(key); 
+                // Replace att name in data with real name for writing to file
+            	//System.err.println(att);
+            	if (att != null)
+            	{
+            		key = att.getDisplayName();
+            	}
+            	else
+            	{
+            		System.err.println("ERROR: No attribute with name "+ key+", skipping!");
+            		continue;
+            	}
+                // Dito value
+                value = att.getNormalizedValueName(value);
+            }            
+            System.err.println(key+" --> "+value);
             value = encodeXML(value);
+
             if (value.equalsIgnoreCase(legacyDefaultValue) || value.equals("")) continue;
             xmlstring=xmlstring+" "+key+"=\""+value+"\" ";
         }                
@@ -2491,6 +2416,7 @@ public class MarkableHelper
     }    
     
     
+    
     /** Used by MMAX query. */
     /** This method is used for matching queries that are NOT RegExps .*/
     public static final boolean matches(Markable markable,String _attribute, String _value, int type, boolean _negated)
@@ -2652,8 +2578,9 @@ public class MarkableHelper
                     }
                 }
 
-                // Here, set is the set of name attributeName of which the current markable is a member, or null               
-                if (value.equalsIgnoreCase("empty"))
+                // Here, set is the set of name attributeName of which the current markable is a member, or null
+                // 1.15
+                if (value.equalsIgnoreCase("empty") || value.equals(""))
                 {
                     if (set == null || set.getSize() == 1)
                     {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Mark-Christoph Müller
+ * Copyright 2007 Mark-Christoph Mï¿½ller
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,11 +67,11 @@ public class MMAX2AttributePanelContainer extends javax.swing.JFrame implements 
 
     private JCheckBoxMenuItem useAnnotationHint = null;
 
-    private HashMap levelToIndex = new HashMap();
+    private HashMap<String, Integer> levelToIndex = new HashMap<String, Integer>();
     
     private JMenu oneClickAnnotationMenu = null;
     private JMenu settingsMenu = null;
-    private ArrayList thisPanelsButtonGroups = new ArrayList();
+    private ArrayList<ButtonGroup> thisPanelsButtonGroups = new ArrayList<ButtonGroup>();
     
     private JMenuItem updatePanel = null;
     
@@ -325,16 +325,16 @@ public class MMAX2AttributePanelContainer extends javax.swing.JFrame implements 
         }        
     }
     
-    public final void addAttributePanel(MMAX2AttributePanel _panel, String levelName)
+    public final void addAttributePanel(MMAX2AttributePanel _panel, String levelName, String schemeName)
     {
         // New: Use tab count as index, not componentcount
-        levelToIndex.put(levelName,new Integer(tabbedPane.getTabCount()));        
+        levelToIndex.put(levelName,tabbedPane.getTabCount());        
         // New: use addTab, not addComment
         JScrollPane pane = new JScrollPane(_panel,JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
                         
         _panel.setScrollPane(pane);
-        tabbedPane.addTab(levelName,pane);        
-        
+        tabbedPane.addTab(levelName, null, pane, schemeName);
+               
         _panel.setAttributePanelContainer(this);
         repaint();
         // Create new menu item for this level
@@ -459,7 +459,7 @@ public class MMAX2AttributePanelContainer extends javax.swing.JFrame implements 
         else
         {
             // We expect the actioncommand to be a number
-            mmax2.setOneClickAnnotationGroupValue(new Integer(command).intValue());            
+            mmax2.setOneClickAnnotationGroupValue(Integer.parseInt(command));            
         }
     }
 
@@ -488,7 +488,8 @@ public class MMAX2AttributePanelContainer extends javax.swing.JFrame implements 
     {
         int index = 0;
         MMAX2AttributePanel panel = null;
-        index = ((Integer)this.levelToIndex.get(clickedMarkable.getMarkableLevelName())).intValue();
+        //index = ((Integer)this.levelToIndex.get(clickedMarkable.getMarkableLevelName())).intValue();
+        index = (int)this.levelToIndex.get(clickedMarkable.getMarkableLevelName());
         JScrollPane pane =(JScrollPane) tabbedPane.getComponentAt(index);
         JViewport port = (JViewport)pane.getComponent(0);
         panel = (MMAX2AttributePanel)port.getView();
@@ -498,15 +499,15 @@ public class MMAX2AttributePanelContainer extends javax.swing.JFrame implements 
     /** This method is called when a Markable has been selected on the display. */
     public final void displayMarkableAttributes(Markable selectedMarkable)
     {      
+    	// This is the level of the MAP-Container! It will take care of pushing the markable's attributes to the correct panel
         int index = 0;
-        MMAX2AttributePanel panel = null;
-        
+        MMAX2AttributePanel panel = null;        
         // Check whether some Markable is currently selected
         if (currentMarkable != null)
         {
             // There is currently some Markable selected, so unselect it first
             // Get index of panel the markable is displayed on
-            index = ((Integer)levelToIndex.get(currentMarkable.getMarkableLevelName())).intValue();
+            index = (int) levelToIndex.get(currentMarkable.getMarkableLevelName());
             JScrollPane pane = (JScrollPane) tabbedPane.getComponentAt(index);
             JViewport port = (JViewport)pane.getComponent(0);
             // Get panel at this position
@@ -522,34 +523,29 @@ public class MMAX2AttributePanelContainer extends javax.swing.JFrame implements 
             // The attributes of a valid Markable are to be displayed
             currentMarkable = selectedMarkable;
             // Get index of MMAX2AttributePanel the selected Markable belongs to
-            index = ((Integer)levelToIndex.get(currentMarkable.getMarkableLevelName())).intValue();
+            //index = ((Integer)levelToIndex.get(currentMarkable.getMarkableLevelName())).intValue();
+            index = (int) levelToIndex.get(currentMarkable.getMarkableLevelName());
             // Enable the corresponding tab
             tabbedPane.setEnabledAt(index,true);
             // Move corresponding tab to front
             tabbedPane.setSelectedIndex(index);
-            // Get panel on the correspnding component
+            // Get panel on the corresponding component
             JScrollPane pane = (JScrollPane) tabbedPane.getComponentAt(index);
             JViewport port = (JViewport)pane.getComponent(0);
-            panel = (MMAX2AttributePanel) port.getView();
-            
+            panel = (MMAX2AttributePanel) port.getView();            
             panel.invalidate();
             panel.rebuild();
-            panel.repaint();
-            
+            panel.repaint();            
             invalidate();
-            repaint();                      
-            
-            // Enable panel itself
+            repaint();                                  
             panel.setEnabled(true);
-            // Show attributes
             panel.displayMarkableAttributes(currentMarkable);
             updatePanel.setEnabled(false);
         }
         else
         {
             invalidate();
-            repaint();            
-            
+            repaint();
             setTitle("");
             disableAll();
             updatePanel.setEnabled(true);

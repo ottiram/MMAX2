@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Mark-Christoph M�ller
+ * Copyright 2021 Mark-Christoph Müller
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,26 +39,12 @@ public class MMAX2Document extends DefaultStyledDocument
     
     /** Creates new MMAX2Document */
     public MMAX2Document(String currentDisplayFontName, int currentDisplayFontSize) 
-    {       
-        super();               
+    {                      
         currentAttributes = new SimpleAttributeSet();
-        StyleConstants.setLineSpacing(currentAttributes, (float)1.5);
+        StyleConstants.setLineSpacing(currentAttributes, (float)0.5);
         setDisplayFontName(currentDisplayFontName);
         setDisplayFontSize(currentDisplayFontSize);        
     }  
-
-    protected void finalize()
-    {
-//        System.err.println("MMAXDocument is being finalized!");        
-        try
-        {
-            super.finalize();
-        }
-        catch (java.lang.Throwable ex)
-        {
-            ex.printStackTrace();
-        }        
-    }
 
     
     public final void setMMAX2(MMAX2 _mmax2)
@@ -73,8 +59,10 @@ public class MMAX2Document extends DefaultStyledDocument
     
     public final void setDisplayFontName(String name)
     {
+//    	Font f = new Font(name, Font.PLAIN, StyleConstants.getFontSize(currentAttributes));
+//        mmax2.getCurrentTextPane().setFont(f);
         StyleConstants.setFontFamily(currentAttributes,name);   
-        mmax2.markableSelectorFont = new Font(name, Font.PLAIN,11);
+        mmax2.markableSelectorFont = new Font(name, Font.PLAIN,11);        
     }
     
     public final void setDisplayFontSize(int size)

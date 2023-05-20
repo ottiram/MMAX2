@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Mark-Christoph Müller
+ * Copyright 2007 Mark-Christoph Mï¿½ller
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -243,7 +243,7 @@ public class MMAX2ActionSelector extends javax.swing.JPopupMenu
                 currentRelation = currentAttribute.getMarkableRelation();
 
                 // Try to get the MarkableSet that the currentPrimaryMarkable is a member of (if any)
-                currentPrimaryMarkablesSet = currentRelation.getMarkableSetWithAttributeValue(currentPrimaryMarkable.getAttributeValue(currentAttribute.getLowerCasedAttributeName()));
+                currentPrimaryMarkablesSet = currentRelation.getMarkableSetWithAttributeValue(currentPrimaryMarkable.getAttributeValue(currentAttribute.getDisplayName()));
                 if (currentPrimaryMarkablesSet != null)
                 {
                     // The current primary markable is member of a set
@@ -277,7 +277,7 @@ public class MMAX2ActionSelector extends javax.swing.JPopupMenu
                         {
                             // The currentSecondary Markable MAY be part in currentRelation                           
                             // Check if it is another set of the same attribute
-                            String temp = currentSecondaryMarkable.getAttributeValue(currentAttribute.getLowerCasedAttributeName());
+                            String temp = currentSecondaryMarkable.getAttributeValue(currentAttribute.getDisplayName());
                             if (temp != null && temp.equals("")==false  && temp.equals(MMAX2.defaultRelationValue)==false)
                             {
                                 // The current secondaryMarkable is part in another set for this attribute already
@@ -291,7 +291,7 @@ public class MMAX2ActionSelector extends javax.swing.JPopupMenu
                                 final MarkableSet adoptingSet = currentPrimaryMarkablesSet;
                                 final MarkableSet leftSet = currentRelation.getMarkableSetWithAttributeValue(temp);
 
-                                leftSet.setOpaque(true);
+                                leftSet.setAmbient(true);
                                 currentMarkableChart.getCurrentDiscourse().getMMAX2().putOnRenderingList(leftSet);                                
                                 currentMarkableChart.getCurrentDiscourse().getMMAX2().getCurrentViewport().repaint();
                                 currentMarkableChart.getCurrentDiscourse().getMMAX2().getCurrentTextPane().startAutoRefresh();                                
@@ -313,7 +313,7 @@ public class MMAX2ActionSelector extends javax.swing.JPopupMenu
                                 item.setFont(MMAX2.getStandardFont());
                                 final MarkableSet adoptingSet2 = currentPrimaryMarkablesSet;
                                 final MarkableSet leftSet2 = currentRelation.getMarkableSetWithAttributeValue(temp);
-                                leftSet2.setOpaque(true);
+                                leftSet2.setAmbient(true);
                                 currentMarkableChart.getCurrentDiscourse().getMMAX2().putOnRenderingList(leftSet2);
                                 currentMarkableChart.getCurrentDiscourse().getMMAX2().getCurrentViewport().repaint();
                                 currentMarkableChart.getCurrentDiscourse().getMMAX2().getCurrentTextPane().startAutoRefresh();                                
@@ -356,7 +356,7 @@ public class MMAX2ActionSelector extends javax.swing.JPopupMenu
                     {
                         // The currentSecondary Markable MAY be part in currentRelation                        
                         // Check if it is another set of the same attribute
-                        String temp = currentSecondaryMarkable.getAttributeValue(currentAttribute.getLowerCasedAttributeName());
+                        String temp = currentSecondaryMarkable.getAttributeValue(currentAttribute.getDisplayName());
                         if (temp != null && temp.equals("")==false && temp.equals(MMAX2.defaultRelationValue)==false)
                         {
                             // The current secondaryMarkable is part in another set for this attribute already
@@ -368,7 +368,7 @@ public class MMAX2ActionSelector extends javax.swing.JPopupMenu
                             item.setHorizontalTextPosition(SwingConstants.RIGHT);                            
                             item.setFont(MMAX2.getStandardFont());
                             final MarkableSet leftSet = currentRelation.getMarkableSetWithAttributeValue(temp);
-                            leftSet.setOpaque(true);
+                            leftSet.setAmbient(true);
                             currentMarkableChart.getCurrentDiscourse().getMMAX2().putOnRenderingList(leftSet);                                
                             currentMarkableChart.getCurrentDiscourse().getMMAX2().getCurrentViewport().repaint();
                             currentMarkableChart.getCurrentDiscourse().getMMAX2().getCurrentTextPane().startAutoRefresh();                                
@@ -390,7 +390,7 @@ public class MMAX2ActionSelector extends javax.swing.JPopupMenu
                             item.setFont(MMAX2.getStandardFont());
                             final MarkableSet adoptingSet2 = currentPrimaryMarkablesSet;
                             final MarkableSet leftSet2 = currentRelation.getMarkableSetWithAttributeValue(temp);
-                            leftSet2.setOpaque(true);
+                            leftSet2.setAmbient(true);
                             currentMarkableChart.getCurrentDiscourse().getMMAX2().putOnRenderingList(leftSet2);
                             currentMarkableChart.getCurrentDiscourse().getMMAX2().getCurrentViewport().repaint();
                             currentMarkableChart.getCurrentDiscourse().getMMAX2().getCurrentTextPane().startAutoRefresh();                                

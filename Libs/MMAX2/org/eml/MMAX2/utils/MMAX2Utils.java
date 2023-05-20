@@ -10,29 +10,56 @@ import java.util.StringTokenizer;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 
+import org.eml.MMAX2.annotation.scheme.MMAX2AnnotationScheme;
+import org.eml.MMAX2.annotation.scheme.MMAX2Attribute;
 import org.eml.MMAX2.core.MMAX2;
 import org.w3c.dom.NamedNodeMap;
 
 public class MMAX2Utils {
 
+	/* This is only executed once upon attribute generation */
 	public static final Color getColorByName(String name)
 	{        
 	    Color result = null;       
 	    if (name != null)
 	    {
-	        if (name.equalsIgnoreCase("black")) result = Color.black;
-	        if (name.equalsIgnoreCase("blue")) result = Color.blue;
-	        if (name.equalsIgnoreCase("cyan")) result = Color.cyan;
-	        if (name.equalsIgnoreCase("darkGray")) result = Color.darkGray;
-	        if (name.equalsIgnoreCase("gray")) result = Color.gray;
-	        if (name.equalsIgnoreCase("green")) result = Color.green;
-	        if (name.equalsIgnoreCase("lightGray")) result = Color.lightGray;
-	        if (name.equalsIgnoreCase("magenta")) result = Color.magenta;
-	        if (name.equalsIgnoreCase("orange")) result = Color.orange;
-	        if (name.equalsIgnoreCase("pink")) result = Color.pink;
-	        if (name.equalsIgnoreCase("red")) result = Color.red;        
-	        if (name.equalsIgnoreCase("white")) result = Color.white;
-	        if (name.equalsIgnoreCase("yellow")) result = Color.yellow;
+	    	name=name.toLowerCase();
+	    	// TODO switch case 
+	        if (name.startsWith("black")) result = Color.black;
+	        if (name.startsWith("blue")) result = Color.blue;
+	        if (name.startsWith("cyan")) result = Color.cyan;
+	        if (name.startsWith("darkGray")) result = Color.darkGray;
+	        if (name.startsWith("gray")) result = Color.gray;
+	        if (name.startsWith("green")) result = Color.green;
+	        if (name.startsWith("lightGray")) result = Color.lightGray;
+	        if (name.startsWith("magenta")) result = Color.magenta;
+	        if (name.startsWith("orange")) result = Color.orange;
+	        if (name.startsWith("pink")) result = Color.pink;
+	        if (name.startsWith("red")) result = Color.red;        
+	        if (name.startsWith("white")) result = Color.white;
+	        if (name.startsWith("yellow")) result = Color.yellow;
+	        
+	    	int alpha = 255;
+	    	if (result != null)
+	    	{
+	    		try
+	    		{
+	    			String als = name.substring(name.lastIndexOf(':')+1);
+	    			System.err.println(als);
+	    			alpha = Integer.parseInt(als);
+	    		}
+	    		catch (java.lang.StringIndexOutOfBoundsException ex)
+	    		{
+	    			
+	    		}
+	    		catch (java.lang.NumberFormatException ex)
+	    		{
+	    			
+	    		}
+
+	    		result=new Color(result.getRed(), result.getGreen(), result.getBlue(), alpha);
+	    	}
+	    		        
 	        if (name.startsWith("x:"))
 	        {
 	            result = getColorByHexValue(name);
@@ -50,7 +77,7 @@ public class MMAX2Utils {
 	    {
 	        System.err.println("Illegal color name: "+name);
 	        result = Color.black;
-	    }        
+	    }        	    
 	    return result;        
 	}
 
@@ -275,21 +302,30 @@ public class MMAX2Utils {
 	    return resultSet;
 	}
 
-	/** This method converts a NodeMap to a HashMap, setting all attribute and value names to lower case !*/
-	public static final HashMap convertNodeMapToHashMap(NamedNodeMap nodemap)
+	/** This method converts a NodeMap to a HashMap. scheme is used for retrieving the referenced attribute objects, for normalizing their names. */	 
+	public static final HashMap<String, String> convertNodeMapToHashMap(NamedNodeMap nodemap, MMAX2AnnotationScheme scheme)
 	{
-	    HashMap resultmap = new HashMap();
-	    String currentattributename="";
-	    String currentvalue="";
+		// This also normalizes attribute and value names
+	    HashMap<String, String> resultmap = new HashMap<String, String>();
 	    if (nodemap != null)
 	    {
-	        int len = nodemap.getLength();
-	        for (int i=0;i<len;i++)
+	        for (int i=0;i<nodemap.getLength();i++)
 	        {
-	            currentattributename = (String) nodemap.item(i).getNodeName();
-	            currentvalue = (String) nodemap.item(i).getNodeValue();
-	            //resultmap.put(new String(currentattributename.toLowerCase()), new String(currentvalue.toLowerCase()));
-	            resultmap.put(currentattributename.toLowerCase(), currentvalue.toLowerCase());
+	        	String attName =  (String) nodemap.item(i).getNodeName();
+	        	String valName = (String) nodemap.item(i).getNodeValue();
+	        	//if (scheme.isDebug()) { System.err.println("'"+attName+"' : '"+valName+"'"); }
+	        	if (scheme != null && 
+	        			scheme.isDefined(attName) && 
+	        			attName.equalsIgnoreCase("id")==false && attName.equalsIgnoreCase("mmax_level")==false && attName.equalsIgnoreCase("span")==false)
+	        	{
+	        		// This is case-insensitive
+	        		MMAX2Attribute att = scheme.getAttributeByName(attName);
+	        		// Get canonical att name, for defined attributes only 
+	        		attName = att.getDisplayName();
+	        		// Get canonical value name
+	        		valName =  att.getNormalizedValueName(valName);
+	        	}
+	            resultmap.put(attName, valName);
 	        }
 	    }
 	    return resultmap;
@@ -317,7 +353,7 @@ public class MMAX2Utils {
 	{
 	    String result="";
 	                
-	    HashMap allAttribsAsHash = convertNodeMapToHashMap(attributeMap);
+	    HashMap allAttribsAsHash = convertNodeMapToHashMap(attributeMap, null);
 	    Iterator allAttribs = allAttribsAsHash.keySet().iterator();
 	    while (allAttribs.hasNext())
 	    {
@@ -535,25 +571,25 @@ public class MMAX2Utils {
 	    return result;
 	}
 
-	public final static String condenseSatelliteSpan_bak(String span)
-	{
-	    String result = "";
-	    ArrayList list = parseTargetSpan(span,";");        
-	    for (int b=0;b<list.size();b++)
-	    {
-	        String currentEntry = (String)list.get(b);
-	        currentEntry = currentEntry.substring(currentEntry.indexOf("_")+1);
-	        if (b==0)
-	        {
-	            result = currentEntry;
-	        }
-	        else
-	        {
-	            result = result+" "+currentEntry;
-	        }
-	    }
-	    return result.trim();
-	}
+//	public final static String condenseSatelliteSpan_bak(String span)
+//	{
+//	    String result = "";
+//	    ArrayList list = parseTargetSpan(span,";");        
+//	    for (int b=0;b<list.size();b++)
+//	    {
+//	        String currentEntry = (String)list.get(b);
+//	        currentEntry = currentEntry.substring(currentEntry.indexOf("_")+1);
+//	        if (b==0)
+//	        {
+//	            result = currentEntry;
+//	        }
+//	        else
+//	        {
+//	            result = result+" "+currentEntry;
+//	        }
+//	    }
+//	    return result.trim();
+//	}
 
 	/** This method accepts a target span string and returns a condensed form of it for display in the AttributeWindow. */
 	public final static String condenseTargetSpan(String span)
@@ -619,9 +655,10 @@ public class MMAX2Utils {
 	    return result;
 	}
 
-	public final static ArrayList parseTargetSpan(String span, String delimiter)
+	
+	public final static ArrayList<String> parseTargetSpan(String span, String delimiter)
 	{
-	    ArrayList result = new ArrayList();
+	    ArrayList<String> result = new ArrayList<String>();
 	    StringTokenizer toki = new StringTokenizer(span,delimiter);
 	    while (toki.hasMoreTokens())
 	    {

@@ -1,5 +1,7 @@
 package org.eml.MMAX2.utils;
 
+import java.util.ArrayList;
+
 public class MMAX2Constants {
 
 	public static int BASE_LEVEL = 7;
@@ -39,5 +41,6 @@ public class MMAX2Constants {
 	public static int MARKABLE_TEXT = 8;
 	public static int STRAIGHT = 1;
 	public static int XCURVE = 4;
+	
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Mark-Christoph Müller
+ * Copyright 2021 Mark-Christoph MÃ¼ller
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ public class MMAX2Caret extends DefaultCaret implements Caret
     
     protected void positionCaret(MouseEvent me)
     {
+//    	System.err.println("positioncaret");
         super.positionCaret(me);
         /** Trigger change event even if Caret position has not changed! */
         fireStateChanged();

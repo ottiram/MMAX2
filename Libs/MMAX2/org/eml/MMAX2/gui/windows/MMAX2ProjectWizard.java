@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Mark-Christoph Müller
+ * Copyright 2007 Mark-Christoph Mï¿½ller
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ import javax.swing.text.SimpleAttributeSet;
 import org.eml.MMAX2.core.MMAX2;
 import org.eml.MMAX2.utils.MMAX2Utils;
 
-import sun.org.mozilla.javascript.internal.JavaScriptException;
+//import sun.org.mozilla.javascript.internal.JavaScriptException;
 /**
  *
  * @author  mueller

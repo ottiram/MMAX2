@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Mark-Christoph M�ller
+ * Copyright 2021 Mark-Christoph Müller
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,25 +31,21 @@ import org.eml.MMAX2.utils.MMAX2Utils;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
-
 public class MMAX2DiscourseLoader 
 {
-    protected String commonPathsFile = "common_paths.xml";
-    
-    protected String commonSchemePath = "";
-    protected String commonStylePath = "";
-    protected String commonBasedataPath = "";
-    protected String commonCustomizationPath = "";
-    protected String commonMarkablePath="";
-    protected String commonQueryPath="";
-    
-    protected String rootPath = "";    
-    protected String wordFileName = "";
-    
+    protected String commonPathsFile 			= "common_paths.xml";    
+    protected String commonSchemePath 			= "";
+    protected String commonStylePath 			= "";
+    protected String commonBasedataPath 		= "";
+    protected String commonCustomizationPath 	= "";
+    protected String commonMarkablePath			= "";
+    protected String commonQueryPath			= "";    
+    protected String rootPath 					= "";    
+    protected String wordFileName 				= "";    
+
     protected String[] markableFileNames;
     protected String[] markableLevelNames;
-    protected String[] schemeFileNames;
-//    protected String[] attributeStrings;    
+    protected String[] schemeFileNames;    
     protected String[] customizationFileNames;
     protected String[] startupModes;
     
@@ -63,279 +59,193 @@ public class MMAX2DiscourseLoader
     /** This has to be static so it can be called from static method getDiscourseElementNodes(String span). */
     protected static MMAX2Discourse currentDiscourse;
 
+    boolean VERBOSE = false;
+    boolean DEBUG = false;
+    
     /** Creates new DiscourseLoader from the supplied .MMAX file. */
-    public MMAX2DiscourseLoader(String fileName, boolean withGUI, String suppliedCommonPathsFile) 
+    public MMAX2DiscourseLoader(String mmaxFileName, boolean withGUI, String suppliedCommonPathsFile) 
     {
-    	boolean verbose = true;
-    	
-    	String verboseVar = System.getProperty("verbose");
-    	if (verboseVar != null && verboseVar.equalsIgnoreCase("false"))
-    	{
-    		verbose = false;
-    	}
+    	try { if (System.getProperty("verbose").equalsIgnoreCase("true")) {VERBOSE = true;} }
+    	catch (java.lang.NullPointerException x) { }
 
-        // Suppose that default is to be used
+    	try { if (System.getProperty("debug").equalsIgnoreCase("true")) {DEBUG = true;} }
+    	catch (java.lang.NullPointerException x) { }
+
+        // Suppose that default common paths is to be used
         boolean useDefault = true;
         if (suppliedCommonPathsFile.equals("")==false)
         {
-            // Sth. has been supplied on the command line, so use that and not default
             commonPathsFile = suppliedCommonPathsFile;
-            // Remember that some supplied file is to be used
             useDefault = false;
         }
-        
-        DOMParser parser = new DOMParser();
-        DocumentImpl MMAXDOM = null;
-        
+                
         // Extract root path, which is the path of the .mmax file
-        rootPath = fileName.substring(0,fileName.lastIndexOf(java.io.File.separator)+1);
+        rootPath = mmaxFileName.substring(0,mmaxFileName.lastIndexOf(java.io.File.separator)+1);
         // Set all paths to root by default; may be overwritten later
-        commonSchemePath = rootPath;
-        commonStylePath = rootPath;
-        commonBasedataPath = rootPath;
+        commonSchemePath 		= rootPath;
+        commonStylePath 		= rootPath;
+        commonBasedataPath 		= rootPath;
         commonCustomizationPath = rootPath;
-        commonMarkablePath = rootPath;
-        commonQueryPath = rootPath;
-        
-        try
-        {
-            parser.setFeature("http://xml.org/sax/features/validation",false);
-        }
-        catch (org.xml.sax.SAXNotRecognizedException ex)
+        commonMarkablePath 		= rootPath;
+        commonQueryPath 		= rootPath;
+
+        // This parser is used for different files
+        DOMParser parser = new DOMParser();
+                
+        try { parser.setFeature("http://xml.org/sax/features/validation",false); }
+        catch (org.xml.sax.SAXNotRecognizedException | org.xml.sax.SAXNotSupportedException ex)
         {
             ex.printStackTrace();            
             return;
         }
-        catch (org.xml.sax.SAXNotSupportedException ex)
-        {
-            ex.printStackTrace();
-            return;
-        }
                 
-        try
-        {            
-            //parser.parse(new InputSource("FILE:"+fileName));
-        	parser.parse(new InputSource(new File(fileName).toURI().toString()));
-        }
+        // Parse .mmax file. In most cases, this provide the basedata file name only. 
+        try { parser.parse(new InputSource(new File(mmaxFileName).toURI().toString())); }
         catch (org.xml.sax.SAXParseException exception)
         {
-            String error = "Line: "+exception.getLineNumber()+" Column: "+exception.getColumnNumber()+"\n"+exception.toString();            
-            JOptionPane.showMessageDialog(null,error,"DiscourseLoader: "+fileName,JOptionPane.ERROR_MESSAGE);
+            String error = "Line: "+exception.getLineNumber()+" Column: "+exception.getColumnNumber()+"\n"+exception.toString();
+            System.err.println(error);
+            JOptionPane.showMessageDialog(null,error,"DiscourseLoader: "+mmaxFileName,JOptionPane.ERROR_MESSAGE);
         }                
-        catch (org.xml.sax.SAXException exception)
+        catch (org.xml.sax.SAXException | java.io.IOException exception)
         {
             String error = exception.toString();
-            JOptionPane.showMessageDialog(null,error,"DiscourseLoader: "+fileName,JOptionPane.ERROR_MESSAGE);
+            System.err.println(error);
+            JOptionPane.showMessageDialog(null,error,"DiscourseLoader: "+mmaxFileName,JOptionPane.ERROR_MESSAGE);
         }
-        catch (java.io.IOException exception)
+        
+        DocumentImpl MMAXDOM = (DocumentImpl) parser.getDocument();
+        NodeList temp = MMAXDOM.getElementsByTagName("words");
+        if (temp.getLength()!=0)
         {
-            String error = exception.toString();
-            JOptionPane.showMessageDialog(null,error,"DiscourseLoader: "+fileName,JOptionPane.ERROR_MESSAGE);
+            //try { wordFileName = commonBasedataPath+temp.item(0).getFirstChild().getNodeValue(); } 
+            try { wordFileName = temp.item(0).getFirstChild().getNodeValue(); }
+            catch (java.lang.NullPointerException ex) { ex.printStackTrace(); }
         }
-              
-        MMAXDOM = (DocumentImpl) parser.getDocument();
-                
-        try
-        {
-            if (useDefault)
-            {
-                // Look for common_paths wrt to root
-                //parser.parse(new InputSource("FILE:"+rootPath+commonPathsFile));
-            	parser.parse(new InputSource(new File(rootPath+commonPathsFile).toURI().toString()));
-            }
-            else
-            {
-                // Try to load the supplied common_paths (NO rootptah here!)
-                //parser.parse(new InputSource("FILE:"+commonPathsFile));                
-                parser.parse(new InputSource(new File(commonPathsFile).toURI().toString()));
-            }
-        }
+        MMAXDOM=null;
+        
+        String cpFileName = commonPathsFile;
+        // Default: assume common_paths.xml at MMAX2 project root path
+        if (useDefault) { cpFileName=rootPath+cpFileName; }
+                                
+        try { parser.parse(new InputSource(new File(cpFileName).toURI().toString()));}
         catch (org.xml.sax.SAXParseException exception)
         {   
-            String error = "Line: "+exception.getLineNumber()+" Column: "+exception.getColumnNumber()+"\n"+exception.toString();            
-            JOptionPane.showMessageDialog(null,error,"DiscourseLoader: "+fileName,JOptionPane.ERROR_MESSAGE);
+            String error = "Line: "+exception.getLineNumber()+" Column: "+exception.getColumnNumber()+"\n"+exception.toString();
+            System.err.println(error);
+            JOptionPane.showMessageDialog(null,error,"DiscourseLoader: "+mmaxFileName,JOptionPane.ERROR_MESSAGE);
         }                
         catch (org.xml.sax.SAXException exception)
         {
             String error = exception.toString();
-            JOptionPane.showMessageDialog(null,error,"DiscourseLoader: "+fileName,JOptionPane.ERROR_MESSAGE);
+            System.err.println(error);
+            JOptionPane.showMessageDialog(null,error,"DiscourseLoader: "+mmaxFileName,JOptionPane.ERROR_MESSAGE);
         }
         catch (java.io.FileNotFoundException exception)
         {   
+        	String error = exception.toString();
             // The common path was not found
             if (!useDefault)
             {
                 // and it was a supplied one
-                String error = exception.toString();
-                JOptionPane.showMessageDialog(null,error,"DiscourseLoader: "+fileName,JOptionPane.ERROR_MESSAGE);
+                System.err.println(error);
+                JOptionPane.showMessageDialog(null,error,"DiscourseLoader: "+mmaxFileName,JOptionPane.ERROR_MESSAGE);
                 return;
-                //System.exit(0);
             }
             else
             {
                 // It was the default one that was not found
-                JOptionPane.showMessageDialog(null,"No default common_paths.xml found!","DiscourseLoader: "+fileName,JOptionPane.ERROR_MESSAGE);
+            	System.err.println(error);
+                JOptionPane.showMessageDialog(null,"No default common_paths.xml found!","DiscourseLoader: "+mmaxFileName,JOptionPane.ERROR_MESSAGE);
                 return;
-                //System.exit(0);
             }
         }
         catch (java.io.IOException exception)
         {
             String error = exception.toString();
-            JOptionPane.showMessageDialog(null,error,"DiscourseLoader: "+fileName,JOptionPane.ERROR_MESSAGE);
+            System.err.println(error);
+            JOptionPane.showMessageDialog(null,error,"DiscourseLoader: "+mmaxFileName,JOptionPane.ERROR_MESSAGE);
         }
-                        
+                                
         if (parser.getDocument()!=null)
         {
+        	if (isVerbose()) {System.err.println(" Reading common data from "+cpFileName);}
             DocumentImpl CPFDOM = null;
             CPFDOM = (DocumentImpl) parser.getDocument();
             NodeList currentCommonPathNodeList = null;
+            
             currentCommonPathNodeList = CPFDOM.getElementsByTagName("scheme_path");
             if (currentCommonPathNodeList.getLength()!=0)
             {
                 String tempSchemePath = "";
-                try
-                {
-                    tempSchemePath = toPlatformdependentPath(currentCommonPathNodeList.item(0).getFirstChild().getNodeValue());
-                }
-                catch (java.lang.NullPointerException ex)
-                {
-                    //ex.printStackTrace();
-                }
+                try { tempSchemePath = toPlatformdependentPath(currentCommonPathNodeList.item(0).getFirstChild().getNodeValue()); }
+                catch (java.lang.NullPointerException ex) { }
 
-                if (new java.io.File(tempSchemePath).isAbsolute())
-                {
-                    commonSchemePath = tempSchemePath;
-                }
-                else
-                {
-                    commonSchemePath = commonSchemePath+tempSchemePath;
-                }     
+                if (new java.io.File(tempSchemePath).isAbsolute()) 	{ commonSchemePath = tempSchemePath; } 
+                else 												{ commonSchemePath = commonSchemePath+tempSchemePath; }
+                if (isVerbose()) {System.err.println("  Common annotation scheme path is "+commonSchemePath);}
             }
-            currentCommonPathNodeList = null;
             
             currentCommonPathNodeList = CPFDOM.getElementsByTagName("style_path");
             if (currentCommonPathNodeList.getLength()!=0)
             {
                 String tempStylePath = "";
-                try
-                {
-                    tempStylePath = toPlatformdependentPath(currentCommonPathNodeList.item(0).getFirstChild().getNodeValue());
-                }
-                catch (java.lang.NullPointerException ex)
-                {
-                	//ex.printStackTrace();
-                }
+                try { tempStylePath = toPlatformdependentPath(currentCommonPathNodeList.item(0).getFirstChild().getNodeValue()); }
+                catch (java.lang.NullPointerException ex) { }
                 
-                if (new java.io.File(tempStylePath).isAbsolute())
-                {
-                    commonStylePath = tempStylePath;
-                }
-                else
-                {
-                    commonStylePath = commonStylePath+tempStylePath;
-                }                     
+                if (new java.io.File(tempStylePath).isAbsolute()) 	{ commonStylePath = tempStylePath; }
+                else 												{ commonStylePath = commonStylePath+tempStylePath; }
             }
-            currentCommonPathNodeList = null;
             
             currentCommonPathNodeList = CPFDOM.getElementsByTagName("basedata_path");
             if (currentCommonPathNodeList.getLength()!=0)
             {
                 String tempBasedataPath="";
-                try
-                {
-                    tempBasedataPath =toPlatformdependentPath(currentCommonPathNodeList.item(0).getFirstChild().getNodeValue());
-                }
-                catch (java.lang.NullPointerException ex)
-                {
-                    //ex.printStackTrace();
-                }
+                try { tempBasedataPath =toPlatformdependentPath(currentCommonPathNodeList.item(0).getFirstChild().getNodeValue()); }
+                catch (java.lang.NullPointerException ex) { }
                 
-                if (new java.io.File(tempBasedataPath).isAbsolute())
-                {
-                    commonBasedataPath = tempBasedataPath;
-                }
-                else
-                {
-                    commonBasedataPath = commonBasedataPath+tempBasedataPath;
-                }                     
+                if (new java.io.File(tempBasedataPath).isAbsolute())	{ commonBasedataPath = tempBasedataPath; }
+                else 													{ commonBasedataPath = commonBasedataPath+tempBasedataPath; }
+                wordFileName = commonBasedataPath+wordFileName; 
+                if (isVerbose()) {System.err.println("  Basedata file is "+wordFileName);}
             }
-            currentCommonPathNodeList = null;
 
             currentCommonPathNodeList = CPFDOM.getElementsByTagName("customization_path");
             if (currentCommonPathNodeList.getLength()!=0)
             {
                 String tempCustomizationPath="";
-                try
-                {
-                    tempCustomizationPath = toPlatformdependentPath(currentCommonPathNodeList.item(0).getFirstChild().getNodeValue());                    
-                }
-                catch (java.lang.NullPointerException ex)
-                {
-                    //ex.printStackTrace();
-                }
+                try { tempCustomizationPath = toPlatformdependentPath(currentCommonPathNodeList.item(0).getFirstChild().getNodeValue()); }
+                catch (java.lang.NullPointerException ex) { }
                 
-                if (new java.io.File(tempCustomizationPath).isAbsolute())
-                {
-                    commonCustomizationPath = tempCustomizationPath;
-                }
-                else
-                {
-                    commonCustomizationPath = commonCustomizationPath+tempCustomizationPath;
-                }                                     
+                if (new java.io.File(tempCustomizationPath).isAbsolute()) { commonCustomizationPath = tempCustomizationPath; }
+                else 													  { commonCustomizationPath = commonCustomizationPath+tempCustomizationPath; }
+                if (isVerbose()) {System.err.println("  Common customization path is "+commonCustomizationPath);}
             }
-            currentCommonPathNodeList = null;                        
 
             currentCommonPathNodeList = CPFDOM.getElementsByTagName("markable_path");
             if (currentCommonPathNodeList.getLength()!=0)
             {
                 String tempMarkablePath="";
-                try
-                {
-                    tempMarkablePath =toPlatformdependentPath(currentCommonPathNodeList.item(0).getFirstChild().getNodeValue());
-                }
-                catch (java.lang.NullPointerException ex)
-                {
-                    //ex.printStackTrace();
-                }
+                try { tempMarkablePath =toPlatformdependentPath(currentCommonPathNodeList.item(0).getFirstChild().getNodeValue()); }
+                catch (java.lang.NullPointerException ex) { }
                 
-                if (new java.io.File(tempMarkablePath).isAbsolute())
-                {
-                    commonMarkablePath = tempMarkablePath;
-                }
-                else
-                {
-                    commonMarkablePath = commonMarkablePath+tempMarkablePath;
-                }                                     
-                
+                if (new java.io.File(tempMarkablePath).isAbsolute()) 	{ commonMarkablePath = tempMarkablePath; }
+                else													{ commonMarkablePath = commonMarkablePath+tempMarkablePath; }                                     
+                if (isVerbose()) {System.err.println("  Common markable path is "+commonMarkablePath);}
             }
-            currentCommonPathNodeList = null;                        
 
-            currentCommonPathNodeList = CPFDOM.getElementsByTagName("query_path");
-            if (currentCommonPathNodeList.getLength()!=0)
-            {
-                String tempQueryPath="";
-                try
-                {
-                    tempQueryPath = toPlatformdependentPath(currentCommonPathNodeList.item(0).getFirstChild().getNodeValue());
-                }
-                catch (java.lang.NullPointerException ex)
-                {
-                	ex.printStackTrace();
-                }
-                
-                if (new java.io.File(tempQueryPath).isAbsolute())
-                {
-                    commonQueryPath = tempQueryPath;
-                }
-                else
-                {
-                    commonQueryPath = commonQueryPath+tempQueryPath;
-                }                                                     
-            }
-            currentCommonPathNodeList = null;                        
-
-            
+//            currentCommonPathNodeList = CPFDOM.getElementsByTagName("query_path");
+            // TODO What is this used for ??
+//            if (currentCommonPathNodeList.getLength()!=0)
+//            {
+//                String tempQueryPath="";
+//                try { tempQueryPath = toPlatformdependentPath(currentCommonPathNodeList.item(0).getFirstChild().getNodeValue()); }
+//                catch (java.lang.NullPointerException ex) { ex.printStackTrace(); }
+//                
+//                if (new java.io.File(tempQueryPath).isAbsolute()) 	{ commonQueryPath = tempQueryPath; }
+//                else												{ commonQueryPath = commonQueryPath+tempQueryPath; }                                                     
+//            }
+          
             currentCommonPathNodeList = CPFDOM.getElementsByTagName("views");
             if (currentCommonPathNodeList.getLength()!=0)
             {
@@ -344,27 +254,29 @@ public class MMAX2DiscourseLoader
                 if (views.getLength() !=0)
                 {
                     // Get number of <level> elements.
-                    int viewCount = views.getLength();
-                        
-                    styleSheetFileNames = new String[viewCount];
-            
+                    int viewCount = views.getLength();                        
+                    styleSheetFileNames = new String[viewCount];            
                     for (int z=0;z<viewCount;z++)
                     {
-                        try
-                        {
-                            styleSheetFileNames[z] = commonStylePath+views.item(z).getFirstChild().getNodeValue();
-                        }
-                        catch (java.lang.NullPointerException ex)
-                        {
-                            JOptionPane.showMessageDialog(null,"Empty <stylesheet> entry in .mmax file!","DiscourseLoader: "+fileName,JOptionPane.ERROR_MESSAGE);
-                        }                       
+                        try { styleSheetFileNames[z] = commonStylePath+views.item(z).getFirstChild().getNodeValue(); }
+                        catch (java.lang.NullPointerException ex) { JOptionPane.showMessageDialog(null,"Empty <stylesheet> entry in .mmax file!","DiscourseLoader: "+mmaxFileName,JOptionPane.ERROR_MESSAGE); }                       
                     }
-                }            
+
+                    if (isVerbose()) 
+                    {
+                    	System.err.println("  Common style sheet path is "+commonStylePath);                    	
+                    	for (int z=0;z<viewCount;z++) 
+                    	{                    		
+                    		System.err.println("   "+z+" "+styleSheetFileNames[z].substring(styleSheetFileNames[z].lastIndexOf(java.io.File.separator)+1));
+                    	}
+                    }
+                }                
             }
             
             currentCommonPathNodeList = CPFDOM.getElementsByTagName("user_switches");
             if (currentCommonPathNodeList.getLength()!=0)
             {
+            	if (isVerbose()) { System.err.println("  User switches");}
                 // Get all user switches
                 NodeList switches = CPFDOM.getElementsByTagName("user_switch");
                 // Create array to accept user switch strings
@@ -372,44 +284,31 @@ public class MMAX2DiscourseLoader
                 for (int z=0;z<switches.getLength();z++)
                 {                    
                     String name="";
-                    String desc="";
-                    String def="";
-                    try
-                    {
-                        name=switches.item(z).getAttributes().getNamedItem("name").getNodeValue();
-                    }
+                    String desc=" ";
+                    String def="off";
+                    try { name=switches.item(z).getAttributes().getNamedItem("name").getNodeValue(); }
                     catch (java.lang.NullPointerException ex)
                     {
-                        System.err.println("User switch with empty 'name' attribute, ignored!");
+                        System.err.println("   User switch with empty 'name' attribute, ignored!");
                         continue;
                     }
                     
-                    try
-                    {
-                        desc=switches.item(z).getAttributes().getNamedItem("description").getNodeValue();
-                    }
-                    catch (java.lang.NullPointerException ex)
-                    {
-                        desc=" ";
-                    }   
-                    try
-                    {
-                        def=switches.item(z).getAttributes().getNamedItem("default").getNodeValue();
-                    }
-                    catch (java.lang.NullPointerException ex)
-                    {
-                        def="off";
-                    }                                                            
+                    try { desc=switches.item(z).getAttributes().getNamedItem("description").getNodeValue(); }
+                    catch (java.lang.NullPointerException ex) { }   
+
+                    try { def=switches.item(z).getAttributes().getNamedItem("default").getNodeValue(); }
+                    catch (java.lang.NullPointerException ex) { }
+                    
                     userSwitches[z] = name+":::"+desc+":::"+def;
+                    if (isVerbose()) { System.err.println("   "+z+" "+userSwitches[z]);}
                 }                                
             }
-            
-            // New: Try to read <annotations> tag from common_paths first
-            NodeList temp = CPFDOM.getElementsByTagName("annotations");
+           
+            temp = CPFDOM.getElementsByTagName("annotations");
             if (temp.getLength()!=0)
             {
-                if (verbose) System.err.println("\nReading <annotation> tags from common paths file "+commonPathsFile);
-                nameSpace = fileName.substring(fileName.lastIndexOf(java.io.File.separator)+1);
+                // if (verbose) System.err.println("  Reading <annotation> tags from common paths file "+commonPathsFile);
+                nameSpace = mmaxFileName.substring(mmaxFileName.lastIndexOf(java.io.File.separator)+1);
                 nameSpace = nameSpace.substring(0,nameSpace.indexOf(".mmax"));                
             
                 /** Get all <level> elements from common_path file. */
@@ -433,228 +332,168 @@ public class MMAX2DiscourseLoader
                         {
                             // Get path as it is given in the level tag
                             tempMarkablePath = annotations.item(z).getFirstChild().getNodeValue();
-                            if (new java.io.File(tempMarkablePath).isAbsolute())
-                            {
-                                // The path in the tag is absolute, so do not prepend common path
-                                markableFileNames[z] = tempMarkablePath;
-                            }
-                            else
-                            {
-                                markableFileNames[z] = commonMarkablePath+tempMarkablePath;
-                            }
+                            if (new java.io.File(tempMarkablePath).isAbsolute()) { markableFileNames[z] = tempMarkablePath; }
+                            else { markableFileNames[z] = commonMarkablePath+tempMarkablePath; }
                             // NEW: Substitute $ with actual name to be used for this document
                             markableFileNames[z] = markableFileNames[z].replaceAll("\\$",nameSpace);
                         }
                         catch (java.lang.NullPointerException ex)
                         {
-                            JOptionPane.showMessageDialog(null,"Empty <level> entry in common paths file "+commonPathsFile+"!","DiscourseLoader: "+fileName,JOptionPane.ERROR_MESSAGE);
+                            JOptionPane.showMessageDialog(null,"Empty <level> entry in common paths file "+commonPathsFile+"!","DiscourseLoader: "+mmaxFileName,JOptionPane.ERROR_MESSAGE);
                             System.exit(0);
                         }
                 
-                        try
-                        {
-                            markableLevelNames[z] = annotations.item(z).getAttributes().getNamedItem("name").getNodeValue();
-                        }
+                        try { markableLevelNames[z] = annotations.item(z).getAttributes().getNamedItem("name").getNodeValue(); }
                         catch (java.lang.NullPointerException ex)
                         {
-                            JOptionPane.showMessageDialog(null,"Missing 'name' attribute for level "+markableFileNames[z],"DiscourseLoader: "+fileName,JOptionPane.ERROR_MESSAGE);                
+                            JOptionPane.showMessageDialog(null,"Missing 'name' attribute for level "+markableFileNames[z],"DiscourseLoader: "+mmaxFileName,JOptionPane.ERROR_MESSAGE);                
                             System.exit(0);                
                         }
 
                         try
-                        {
-                            schemeFileNames[z] = commonSchemePath+annotations.item(z).getAttributes().getNamedItem("schemefile").getNodeValue();
-                        }
+                        { schemeFileNames[z] = commonSchemePath+annotations.item(z).getAttributes().getNamedItem("schemefile").getNodeValue(); }
                         catch (java.lang.NullPointerException ex)
                         {
-                            JOptionPane.showMessageDialog(null,"Missing 'schemefile' attribute for level "+markableFileNames[z],"DiscourseLoader: "+fileName,JOptionPane.ERROR_MESSAGE);                
+                            JOptionPane.showMessageDialog(null,"Missing 'schemefile' attribute for level "+markableFileNames[z],"DiscourseLoader: "+mmaxFileName,JOptionPane.ERROR_MESSAGE);                
                             System.exit(0);                                
                         }
                     
-                        /*
-                        try
-                        {
-                            attributeStrings[z] = annotations.item(z).getAttributes().getNamedItem("default").getNodeValue();
-                        }
-                        catch (java.lang.NullPointerException ex)
-                        {
-                            attributeStrings[z] = "";
-                        }                                        
-                        */
-                        try
-                        {
-                            customizationFileNames[z] = commonCustomizationPath+annotations.item(z).getAttributes().getNamedItem("customization_file").getNodeValue();
-                        }
-                        catch (java.lang.NullPointerException ex)
-                        {
-                            customizationFileNames[z] = "";
-                        }
+                        try { customizationFileNames[z] = commonCustomizationPath+annotations.item(z).getAttributes().getNamedItem("customization_file").getNodeValue(); }
+                        catch (java.lang.NullPointerException ex) { customizationFileNames[z] = ""; }
                         
-                        try
-                        {
-                            startupModes[z] = annotations.item(z).getAttributes().getNamedItem("at_startup").getNodeValue();
-                        }
-                        catch (java.lang.NullPointerException ex)
-                        {
-                            startupModes[z] = "active";
-                        }                              
+                        try { startupModes[z] = annotations.item(z).getAttributes().getNamedItem("at_startup").getNodeValue(); }
+                        catch (java.lang.NullPointerException ex) { startupModes[z] = "active";}                              
                     }
                 }
             }                                                        
         }
+         
+      if (nameSpace.equals("")==true)
+      {
+    	  System.err.println("Annotation data (e.g. markable level file names) is missing in common_paths.xml!\nUsing the .mmax file for data other than basedata file names is deprecated!");
+    	  System.exit(0);
+      }
+           
+//        if (nameSpace.equals("")==true)
+//        {
+//            // Read <annotations> from .mmax file only if they were not found in <common_paths> earlier
+//            temp = MMAXDOM.getElementsByTagName("annotations");
+//            if (temp.getLength()!=0)
+//            {
+//                /** Get all <level> elements. */
+//                NodeList annotations = MMAXDOM.getElementsByTagName("level");
+//                if (annotations.getLength() !=0)
+//                {
+//                    /** Get number of <level> elements. */
+//                    levelCount = annotations.getLength();
+//                        
+//                    markableFileNames = new String[levelCount];
+//                    markableLevelNames = new String[levelCount];
+//                    schemeFileNames = new String[levelCount];
+//                    //attributeStrings = new String[levelCount];
+//                    customizationFileNames = new String[levelCount];
+//                    startupModes = new String[levelCount];
+//                    
+//                    for (int z=0;z<levelCount;z++)
+//                    {
+//                        try
+//                        {
+//                            markableFileNames[z] =commonMarkablePath+ annotations.item(z).getFirstChild().getNodeValue();
+//                        }
+//                        catch (java.lang.NullPointerException ex)
+//                        {
+//                            JOptionPane.showMessageDialog(null,"Empty <level> entry in .mmax file!","DiscourseLoader: "+mmaxFileName,JOptionPane.ERROR_MESSAGE);
+//                            System.exit(0);                
+//                        }
+//                
+//                        try
+//                        {
+//                            markableLevelNames[z] = annotations.item(z).getAttributes().getNamedItem("name").getNodeValue();
+//                        }
+//                        catch (java.lang.NullPointerException ex)
+//                        {
+//                            JOptionPane.showMessageDialog(null,"Missing 'name' attribute for level "+markableFileNames[z],"DiscourseLoader: "+mmaxFileName,JOptionPane.ERROR_MESSAGE);                
+//                            System.exit(0);                
+//                        }
+//
+//                        try
+//                        {
+//                            schemeFileNames[z] = commonSchemePath+annotations.item(z).getAttributes().getNamedItem("schemefile").getNodeValue();
+//                        }
+//                        catch (java.lang.NullPointerException ex)
+//                        {
+//                            JOptionPane.showMessageDialog(null,"Missing 'schemefile' attribute for level "+markableFileNames[z],"DiscourseLoader: "+mmaxFileName,JOptionPane.ERROR_MESSAGE);                
+//                            System.exit(0);                                
+//                        }
+//                    
+//                        /*
+//                        try
+//                        {
+//                            attributeStrings[z] = annotations.item(z).getAttributes().getNamedItem("default").getNodeValue();
+//                        }
+//                        catch (java.lang.NullPointerException ex)
+//                        {
+//                            attributeStrings[z] = "";
+//                        }                                        
+//                    */
+//                        try
+//                        {   
+//                            customizationFileNames[z] = commonCustomizationPath+annotations.item(z).getAttributes().getNamedItem("customization_file").getNodeValue();
+//                        }
+//                        catch (java.lang.NullPointerException ex)
+//                        {
+//                            customizationFileNames[z] = "";
+//                        }
+//                        try
+//                        {
+//                            startupModes[z] = annotations.item(z).getAttributes().getNamedItem("at_startup").getNodeValue();
+//                        }
+//                        catch (java.lang.NullPointerException ex)
+//                        {
+//                            startupModes[z] = "active";
+//                        }                          
+//                    }
+//                }
+//            }
+//        }
         
-        
-        
-        NodeList temp = null;
-        temp = MMAXDOM.getElementsByTagName("root_path");
-        if (temp.getLength()!=0)
-        {
-            System.err.println("Found deprecated <root_path> tag, ignored!");
-        }
- 
-        temp = MMAXDOM.getElementsByTagName("words");
-        if (temp.getLength()!=0)
-        {
-            try
-            {
-                wordFileName = commonBasedataPath+temp.item(0).getFirstChild().getNodeValue();
-            }
-            catch (java.lang.NullPointerException ex)
-            {
-            	ex.printStackTrace();
-            }
-        }                             
-        if (nameSpace.equals("")==true)
-        {
-            // Read <annotations> from this file only if they were not found in <common_paths> earlier
-            temp = MMAXDOM.getElementsByTagName("annotations");
-            if (temp.getLength()!=0)
-            {
-                /** Get all <level> elements. */
-                NodeList annotations = MMAXDOM.getElementsByTagName("level");
-                if (annotations.getLength() !=0)
-                {
-                    /** Get number of <level> elements. */
-                    levelCount = annotations.getLength();
-                        
-                    markableFileNames = new String[levelCount];
-                    markableLevelNames = new String[levelCount];
-                    schemeFileNames = new String[levelCount];
-                    //attributeStrings = new String[levelCount];
-                    customizationFileNames = new String[levelCount];
-                    startupModes = new String[levelCount];
-                    
-                    for (int z=0;z<levelCount;z++)
-                    {
-                        try
-                        {
-                            markableFileNames[z] =commonMarkablePath+ annotations.item(z).getFirstChild().getNodeValue();
-                        }
-                        catch (java.lang.NullPointerException ex)
-                        {
-                            JOptionPane.showMessageDialog(null,"Empty <level> entry in .mmax file!","DiscourseLoader: "+fileName,JOptionPane.ERROR_MESSAGE);
-                            System.exit(0);                
-                        }
-                
-                        try
-                        {
-                            markableLevelNames[z] = annotations.item(z).getAttributes().getNamedItem("name").getNodeValue();
-                        }
-                        catch (java.lang.NullPointerException ex)
-                        {
-                            JOptionPane.showMessageDialog(null,"Missing 'name' attribute for level "+markableFileNames[z],"DiscourseLoader: "+fileName,JOptionPane.ERROR_MESSAGE);                
-                            System.exit(0);                
-                        }
-
-                        try
-                        {
-                            schemeFileNames[z] = commonSchemePath+annotations.item(z).getAttributes().getNamedItem("schemefile").getNodeValue();
-                        }
-                        catch (java.lang.NullPointerException ex)
-                        {
-                            JOptionPane.showMessageDialog(null,"Missing 'schemefile' attribute for level "+markableFileNames[z],"DiscourseLoader: "+fileName,JOptionPane.ERROR_MESSAGE);                
-                            System.exit(0);                                
-                        }
-                    
-                        /*
-                        try
-                        {
-                            attributeStrings[z] = annotations.item(z).getAttributes().getNamedItem("default").getNodeValue();
-                        }
-                        catch (java.lang.NullPointerException ex)
-                        {
-                            attributeStrings[z] = "";
-                        }                                        
-                    */
-                        try
-                        {   
-                            customizationFileNames[z] = commonCustomizationPath+annotations.item(z).getAttributes().getNamedItem("customization_file").getNodeValue();
-                        }
-                        catch (java.lang.NullPointerException ex)
-                        {
-                            customizationFileNames[z] = "";
-                        }
-                        try
-                        {
-                            startupModes[z] = annotations.item(z).getAttributes().getNamedItem("at_startup").getNodeValue();
-                        }
-                        catch (java.lang.NullPointerException ex)
-                        {
-                            startupModes[z] = "active";
-                        }                          
-                    }
-                }
-            }
-        }
-        
-        /* Create MMAX2Discourse object */
-        currentDiscourse = new MMAX2Discourse(withGUI);
-        
-        currentDiscourse.setCommonBasedataPath(commonBasedataPath);
-        
-        if (withGUI)
-        {
-        	currentDiscourse.getCurrentMarkableChart().currentLevelControlWindow.setStyleSheetSelector(styleSheetFileNames);
-        }
-        currentDiscourse.setCurrentStyleSheet(styleSheetFileNames[0]);
-        
-        currentDiscourse.setNameSpace(nameSpace);
-        
-        DiscourseElementFileLoader deloader = new DiscourseElementFileLoader();
-        if (wordFileName.equals("")==false) 
-        {
-            deloader.load(wordFileName);
-            currentDiscourse.setWordDOM(deloader.getDOM());
-            currentDiscourse.setWordFileName(wordFileName);
-        }
-        else
+      	if (styleSheetFileNames.length ==0)
+      	{
+            JOptionPane.showMessageDialog(null,"You must specify at least one XSL style sheet file!","DiscourseLoader: "+mmaxFileName,JOptionPane.ERROR_MESSAGE);
+            System.exit(0);                              		
+      	}
+        if (wordFileName.equals("")==true) 
         {
         	System.err.println("No word file name given!");
+        	System.exit(0);
         }
+                  
+        DiscourseElementFileLoader deloader = new DiscourseElementFileLoader();
+        if (isVerbose()) {System.err.print("\n  Loading basedata from "+wordFileName+" ... ");}
+        int b=deloader.load(wordFileName);
+        if (isVerbose()) {System.err.println(b+" elements have been loaded!");}
+
+        /* Create MMAX2Discourse object */
+        currentDiscourse = new MMAX2Discourse(withGUI);
+        currentDiscourse.setWordDOM(deloader.getDOM());
+        currentDiscourse.setWordFileName(wordFileName);
+        currentDiscourse.setCommonBasedataPath(commonBasedataPath);
         
+        if (withGUI) { currentDiscourse.getCurrentMarkableChart().currentLevelControlWindow.setStyleSheetSelector(styleSheetFileNames); }
+        currentDiscourse.setCurrentStyleSheet(styleSheetFileNames[0]);        
+        currentDiscourse.setNameSpace(nameSpace);        
+        currentDiscourse.setStyleSheetFileNames(this.styleSheetFileNames);
         
-        if (styleSheetFileNames.length ==0)
-        {
-            JOptionPane.showMessageDialog(null,"You must specify at least one XSL style sheet file!","DiscourseLoader: "+fileName,JOptionPane.ERROR_MESSAGE);
-            System.exit(0);                        
-        }
-        else
-        {
-            currentDiscourse.setStyleSheetFileNames(this.styleSheetFileNames);
-        }
-        
-        // Create one instance of mfl
+        // Create one MFL instance
         MarkableFileLoader mfl = new MarkableFileLoader();
         int currentMaxID =0;
         int totalMaxID = 0;
         // Iterate over all markable file names found
         for (int p=0;p<levelCount;p++)
         {
-            // Use mfl to load current markable file
-            // This will produec a markable level object
-            if (verbose) System.err.println("Loading level "+markableLevelNames[p]+" ... ");
-            //mfl.load(markableFileNames[p],markableLevelNames[p],schemeFileNames[p], attributeStrings[p],customizationFileNames[p], startupModes[p]);
+//            if (isVerbose()) System.err.println("\n  Loading markable level "+markableLevelNames[p]+" ... ");
             mfl.load(markableFileNames[p],markableLevelNames[p],schemeFileNames[p],customizationFileNames[p], startupModes[p]);
+
             // Get markable level object. Up to now, this has only a non-null DOM, but no markables yet
             MarkableLevel newLevel = mfl.getMarkableLevel();
             // Set reference to associated discourse. This is required for next call (cf. below)
@@ -665,6 +504,17 @@ public class MMAX2DiscourseLoader
         }                
         currentDiscourse.getCurrentMarkableChart().setNextFreeMarkableIDNum(totalMaxID+1);
     }
+    
+    public boolean isVerbose()
+    {
+    	return VERBOSE;
+    }
+
+    public boolean isDebug()
+    {
+    	return DEBUG;
+    }
+
     
     private final String toPlatformdependentPath(String inPath)
     {
@@ -913,7 +763,7 @@ public class MMAX2DiscourseLoader
             int start = currentDiscourse.getCurrentDocumentPosition();
             
             // Add the Display Position as the display start of the current DiscourseElement (i.e. the last one added)             
-            currentDiscourse.temporaryDisplayStartPosition.add(new Integer(start));
+            currentDiscourse.temporaryDisplayStartPosition.add(start);
             
             // Now, temporaryDisplayStartPosition contains at index X the discPos of the DE starting at display
             // pos X.
@@ -938,7 +788,7 @@ public class MMAX2DiscourseLoader
             // Get index in document string up to which the document has been transformed already.
             int end = currentDiscourse.getCurrentDocumentPosition()-1;
             // Add the document string index as the display end of the current DiscourseElement (i.e. the last one added) 
-            currentDiscourse.temporaryDisplayEndPosition.add(new Integer(end));           
+            currentDiscourse.temporaryDisplayEndPosition.add(end);           
             if (currentDiscourse.getHasGUI()) currentDiscourse.getDisplayDocument().flush();            
         }
         catch (java.lang.Exception ex)
@@ -959,6 +809,7 @@ public class MMAX2DiscourseLoader
         
     public static void startBold()
     {
+    	//System.err.println("setBold=True");
         if (currentDiscourse.getHasGUI()) currentDiscourse.getDisplayDocument().setBold(true);
     }  
     

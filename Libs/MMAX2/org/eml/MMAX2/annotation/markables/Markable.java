@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Mark-Christoph M�ller
+ * Copyright 2021 Mark-Christoph Müller
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,12 @@
 
 package org.eml.MMAX2.annotation.markables;
 
+import java.awt.FontMetrics;
+import java.awt.Graphics2D;
 // Attributes
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -44,7 +47,8 @@ public final class Markable implements java.io.Serializable, MarkableAPI
     /** Number of Discourse Elements this Markable is part of (calculated from this.fragments). */    
     int size;    
     /** Attributes of this markable. After creation, this will include the _span_ attribute! */
-    HashMap attributes;        
+    // 1.15 Names are in canonical fom here !
+    HashMap<String, String> attributes;        
     
     private MarkableLevel level;    
     private Node nodeRepresentation=null;
@@ -72,7 +76,7 @@ public final class Markable implements java.io.Serializable, MarkableAPI
        MarkableHelper.register(this,false). 
      
      */
-    public Markable(Node _nodeRepresentation, String _ID, String[][] _fragments, HashMap _attributes, MarkableLevel _level) 
+    public Markable(Node _nodeRepresentation, String _ID, String[][] _fragments, HashMap<String, String> _attributes, MarkableLevel _level) 
     {
         nodeRepresentation = _nodeRepresentation;
         ID = _ID;
@@ -80,11 +84,10 @@ public final class Markable implements java.io.Serializable, MarkableAPI
         fragments = _fragments;        
         level = _level;
                 
+        
         // Make level name accessible from style sheet via 'mmax_level' attribute.
         if (attributes.containsKey("mmax_level")==false)
         {
-            // The current markable does NOT have a mmax_level attribute
-            // So take level name as value for mmax_level attribute
             ((Element)nodeRepresentation).setAttribute("mmax_level",level.getMarkableLevelName());
             attributes.put("mmax_level", level.getMarkableLevelName());
         }
@@ -99,6 +102,7 @@ public final class Markable implements java.io.Serializable, MarkableAPI
                 ((Element)nodeRepresentation).setAttribute("mmax_level",level.getMarkableLevelName());
                 attributes.put("mmax_level", level.getMarkableLevelName());               
                 level.setIsReadOnly(true);
+                System.err.println("Mismatch in mmax_level attribute: "+level.getMarkableLevelName());
             }
         }
         
@@ -113,26 +117,17 @@ public final class Markable implements java.io.Serializable, MarkableAPI
 //        leftHandlePositions = new int[singleFragments];
 //        rightHandlePositions = new int[singleFragments];
 
-      leftHandlePositions = new int[0];
-      rightHandlePositions = new int[0];
+        leftHandlePositions = new int[0];
+        rightHandlePositions = new int[0];
         
         /** Init arrays to have space for one start and one end position per fragment */
         displayStartPositions = new int[singleFragments];
         displayEndPositions = new int[singleFragments];                        
         // Register without has update
-        MarkableHelper.register(this,false);                       
+        MarkableHelper.register(this,false);
     }
     
-    
-// Never used, remove Jan 8, 2021
-//    public final void clearMarkableHandles()
-//    {
-//        leftHandlePositions = null;
-//        leftHandlePositions = new int[0];
-//        rightHandlePositions = null;
-//        rightHandlePositions = new int[0];
-//    }
-    
+      
     /** This method is called on each markable after a change in the base data */
     public final void update(String[][] _fragments)
     {        
@@ -140,8 +135,7 @@ public final class Markable implements java.io.Serializable, MarkableAPI
         fragments = _fragments;
         /** Set size attribute as number of single fragments. */
         singleFragments = fragments.length;
-             
-        
+                    
         /** Set discontinuity convenience field */
         if (singleFragments > 1) discontinuous = true;
                  
@@ -162,27 +156,27 @@ public final class Markable implements java.io.Serializable, MarkableAPI
     
     public final String toString()
     {
-        //return getString();
     	return string;
     }
     
-    public final String[] getDiscourseElements()
-    {
-        String[] des = getDiscourseElementIDs();
-        ArrayList temp = new ArrayList();
-        for (int z=0;z<des.length;z++)
-        {
-            temp.add(level.getCurrentDiscourse().getDiscourseElementNode(des[z]).getFirstChild().getNodeValue());
-        }
-        return (String[])temp.toArray(new String[0]);
-    }
+    // 1.15 Tentatively removed
+//    public final String[] getDiscourseElements()
+//    {
+//        String[] des = getDiscourseElementIDs();
+//        ArrayList temp = new ArrayList();
+//        for (int z=0;z<des.length;z++)
+//        {
+//            temp.add(level.getCurrentDiscourse().getDiscourseElementNode(des[z]).getFirstChild().getNodeValue());
+//        }
+//        return (String[])temp.toArray(new String[0]);
+//    }
 
     
     
     public final String[] getDiscourseElementIDs()
     {
         // For discontinuous markables as well!!
-        ArrayList temp = new ArrayList();
+        ArrayList<String> temp = new ArrayList<String>();
         for (int z=0;z<singleFragments;z++)
         {
             // Get currentFragment
@@ -201,12 +195,12 @@ public final class Markable implements java.io.Serializable, MarkableAPI
     public final boolean removeDiscourseElements(String[] removees)
     {
         // removees are certain to be continuous, but may contain more than the actual markable
-        String[] currentFragment = null;
+//        String[] currentFragment = null;
         boolean result = false;
         
         // getDiscourseElements is discont-ready!
         MMAX2DiscourseElement[] sequence = level.getCurrentDiscourse().getDiscourseElements(this);
-        ArrayList DEsAsList = new ArrayList(java.util.Arrays.asList(sequence));        
+        ArrayList<MMAX2DiscourseElement> DEsAsList = new ArrayList<MMAX2DiscourseElement>(java.util.Arrays.asList(sequence));        
         
         // Now, desAsList contains all of the current markables des        
         // iterate over removees
@@ -277,8 +271,7 @@ public final class Markable implements java.io.Serializable, MarkableAPI
   */  
     public final boolean addDiscourseElements(String[] addees)
     {
-//    	System.out.println(addees);
-        ArrayList addeesAsList = new ArrayList();
+        ArrayList<MMAX2DiscourseElement> addeesAsList = new ArrayList<MMAX2DiscourseElement>();
         // Get list of MMAX2DiscourseElement objects to be added
         for (int z=0;z<addees.length;z++)
         {
@@ -293,7 +286,7 @@ public final class Markable implements java.io.Serializable, MarkableAPI
         MMAX2DiscourseElement[] sequence = level.getCurrentDiscourse().getDiscourseElements(this);
         
         // Get list of DEs already in Markable
-        ArrayList DEsAsList = new ArrayList(java.util.Arrays.asList(sequence));        
+        ArrayList<MMAX2DiscourseElement> DEsAsList = new ArrayList<MMAX2DiscourseElement>(java.util.Arrays.asList(sequence));        
         // Get range of markable
         int firstDiscPosInMarkable = ((MMAX2DiscourseElement)DEsAsList.get(0)).getDiscoursePosition();
         int lastDiscPosInMarkable = ((MMAX2DiscourseElement)DEsAsList.get(DEsAsList.size()-1)).getDiscoursePosition();
@@ -501,48 +494,6 @@ public final class Markable implements java.io.Serializable, MarkableAPI
     {
         return level;
     }
-/*
-    /** This method returns an array of Markables on MarkableLevel levelName that are coextensive with this, or empty array. */
-/*    public final Markable[] getPeerMarkables(String levelName)
-    {
-        Markable[] result = null;
-        MarkableLevel targetLevel = this.level.getCurrentDiscourse().getCurrentMarkableChart().getMarkableLevelByName(levelName,false);
-        if (targetLevel != null)
-        {
-            ArrayList tempResult = new ArrayList();
-            // A MarkableLevel with name levelName was found
-            // A peer Markable to the current Markable is one that 
-            // starts and ends at the same positions
-            // Get ID of first DE in first fragment
-            String startID = this.fragments[0][0];
-            // Get ID of last DE in last fragment // NO SUPPORT FOR DISCONTINUITY YET!
-            String endID = this.fragments[0][this.fragments[0].length-1];
-            // Get all Markables on targetLevel starting at the same pos as this
-            Markable[] sameStarters = targetLevel.getAllMarkablesStartedByDiscourseElement(startID);
-            Markable currentSameStarter = null;
-            String currentSameStartersEnd = "";
-            // Iterate over all Markables from targetLevel starting at the same pos as this
-            for (int z=0;z<sameStarters.length;z++)
-            {
-                // Get currentSameStarter
-                currentSameStarter = sameStarters[z];
-                // Get end of currentSameStarter
-                currentSameStartersEnd = currentSameStarter.getFragments()[0][currentSameStarter.getFragments()[0].length-1];
-                if (endID.equals(currentSameStartersEnd))
-                {
-                    // Both end with the same DE
-                    tempResult.add(currentSameStarter);
-                }
-            }            
-            result = (Markable[]) tempResult.toArray(new Markable[tempResult.size()]);
-        }
-        else
-        {
-            result = new Markable[0];
-        }
-        return result;
-    }
-*/    
 
     /** This does return attributes only, values are changed back immediately afterwards!! (Used for creation of ActionSelector) 
         Important: This does NOT make sure to set the attribute window to prior display state!! */
@@ -589,36 +540,7 @@ public final class Markable implements java.io.Serializable, MarkableAPI
         }
         return result;
     }
-/*    
-    /** Needed if Markables contain suppressed Discourse elements. */
-   
-/*    private final int getFollowingValidDiscourseElementPosition(String[] currentFragment, int currentPos)
-    {
-        int result = -1;
-        Node currentNode = null;
-        // When this is called, the DE at currentPos is already known to be invalid, so start at element one to the right
-        int tempPos = currentPos + 1;
-        while(tempPos <currentFragment.length)
-        {
-            // Get Node representation of element at tempPos 
-            currentNode = level.getCurrentDiscourse().getDiscourseElementNode(currentFragment[tempPos]);
-            try
-            {
-                if (currentNode.getAttributes().getNamedItem("empty").getNodeValue().equals("true"))
-                {
-                    tempPos++;
-                }
-            }
-            catch (java.lang.NullPointerException ex)
-            {
-                // currentNode does not have the 'empty' attribute, so we found a valid element
-                result = tempPos;
-                break;
-            }        
-        }        
-        return result;
-    }    
-*/    
+
     public final String[][] getFragments()
     {
         return fragments;
@@ -655,28 +577,22 @@ public final class Markable implements java.io.Serializable, MarkableAPI
     {
     	// Point is the top left coord of the markable. If no handles are active, we use the display start position, else the
     	// left handle position
-    	// Idea: Return both to allow drawing of relations in both directions??
         Point resultPoint = null;
-        Rectangle tempRect = null;
-//        System.err.println("Getting point");
-//        System.err.println(displayStartPositions[0]);
-//        System.err.println(displayEndPositions[0]);
+        Rectangle2D tempRect = null;
         try
         {
             if (leftHandlePositions.length==0)
             {
-//            	System.err.println("Using display info");
             	// Use display pos if no handles are available
             	// This is wrong: HandlePositions are currently initialized as a one-elem-array,
             	// and so never have length 0
-            	// Changed: handlepositions are nowe inited with len 0 array
-            	tempRect = level.getCurrentDiscourse().getMMAX2().getCurrentTextPane().modelToView(displayStartPositions[0]);
+            	// Changed: handlepositions are now inited with len 0 array
+            	tempRect = level.getCurrentDiscourse().getMMAX2().getCurrentTextPane().modelToView2D(displayStartPositions[0]);
             }
             else
             {
-//            	System.err.println("Using handle info");
             	// else use left handle pos
-                tempRect = level.getCurrentDiscourse().getMMAX2().getCurrentTextPane().modelToView(leftHandlePositions[0]);
+                tempRect = level.getCurrentDiscourse().getMMAX2().getCurrentTextPane().modelToView2D(leftHandlePositions[0]);
             }
         }
         catch (javax.swing.text.BadLocationException ex)
@@ -684,11 +600,63 @@ public final class Markable implements java.io.Serializable, MarkableAPI
             System.out.println("Error with display position determination for Markable "+getID());
         }
           
-//        System.out.println(tempRect);
-        resultPoint = new Point((int)tempRect.getX(),(int)tempRect.getY());
+        resultPoint = new Point((int)tempRect.getX(),(int)tempRect.getY());        
         return resultPoint;
     }
     
+    public final Point[] getRectangle()
+    {
+        Graphics2D graphics = (Graphics2D) this.getMarkableLevel().getCurrentDiscourse().getMMAX2().getCurrentTextPane().getGraphics();         
+        FontMetrics m = graphics.getFontMetrics();
+        int brackWidth = m.charWidth('[');
+        int hOffSet=(int)(brackWidth/2);
+        int lineHeight = m.getHeight();
+        int vOffSet = (int)this.level.getCurrentDiscourse().getMMAX2().currentDisplayFontSize/5;
+                
+    	// Rectangle describes the four corners of a markable
+    	// Point is the top left coord of the markable. If no handles are active, we use the display start position, else the left handle position
+    	Point[] res = new Point[4];
+        Rectangle2D tempRect = null;
+        
+        try
+        {
+            if (leftHandlePositions.length==0)
+            {
+            	// x,y of top left, width = 0, height depends on line height
+            	tempRect = level.getCurrentDiscourse().getMMAX2().getCurrentTextPane().modelToView2D(displayStartPositions[0]);
+            }
+            else
+            {
+            	// else use left handle pos
+                tempRect = level.getCurrentDiscourse().getMMAX2().getCurrentTextPane().modelToView2D(leftHandlePositions[0]);
+            }
+        	//topLeft
+        	res[0] = new Point((int)tempRect.getX()+hOffSet, (int) tempRect.getY() + vOffSet);
+        	//bottomLeft 
+        	res[3] = new Point((int)tempRect.getX()+hOffSet, (int) tempRect.getY() + lineHeight - vOffSet);
+
+            if (rightHandlePositions.length==0)
+            {
+            	// x,y of top right, width = 0, height depends on line height
+            	tempRect = level.getCurrentDiscourse().getMMAX2().getCurrentTextPane().modelToView2D(displayEndPositions[displayEndPositions.length-1]);
+            }
+            else
+            {
+            	// else use right handle pos
+                tempRect = level.getCurrentDiscourse().getMMAX2().getCurrentTextPane().modelToView2D(rightHandlePositions[rightHandlePositions.length-1]);
+            }
+            //topRight 
+        	res[1] = new Point((int)tempRect.getX()+hOffSet, (int) tempRect.getY() + vOffSet);
+        	// bottomRight 
+        	res[2] = new Point((int)tempRect.getX()+hOffSet, (int) tempRect.getY() + lineHeight - vOffSet);        	        	
+        }
+        catch (javax.swing.text.BadLocationException ex)
+        {
+            System.out.println("Error with display position determination for Markable "+getID());
+        }        
+        return res;
+    }
+
     
     /** This method returns all of this Markable's attributes (except ID and SPAN, which are system-attributes) as a HashMap. */
     public final HashMap getAttributes()
@@ -741,11 +709,12 @@ public final class Markable implements java.io.Serializable, MarkableAPI
     
     /** This method returns the value this Markable has for attribute attributeName, or null if attribute is not defined for
         Markable. attributeName is set to lowercase before its value is retrieved, and value is set to lower case before 
-        it is returned. */
+        it is returned. 
+        1.15: Casing is maintained now!*/
     public final String getAttributeValue(String attributeName)
     {
         String result = null;
-        attributeName = attributeName.toLowerCase();
+        //attributeName = attributeName.toLowerCase();
         if (this.attributes.containsKey(attributeName))
         {
             result = (String) this.attributes.get(attributeName);
@@ -755,7 +724,8 @@ public final class Markable implements java.io.Serializable, MarkableAPI
     
     public final String getAttributeValue(String name, String defaultIfUndefined)
     {
-        String result = (String) attributes.get(name.toLowerCase());
+        //String result = (String) attributes.get(name.toLowerCase());
+        String result = (String) attributes.get(name);
         if (result == null) result = defaultIfUndefined;
         return result;
     }
@@ -764,49 +734,46 @@ public final class Markable implements java.io.Serializable, MarkableAPI
     public final void setAttributeValue(String attributeName, String value)
     {
     	// This is apparently only used in relation to relation-activities, so dirty = true is probably ok
-        attributes.put(attributeName.toLowerCase(), value.toLowerCase());               
+        //attributes.put(attributeName.toLowerCase(), value.toLowerCase());
+    	// For 1.15
+        //attributes.put(attributeName.toLowerCase(), value);    	
+        attributes.put(attributeName, value);
         level.setIsDirty(true,false);
     }
     
     public final void setAttributeValueToNode(String attributeName, String value)
     {
         // Todo: Make sure that attribute really exists!!
-        nodeRepresentation.getAttributes().getNamedItem(attributeName).setNodeValue(value.toLowerCase());
+        //nodeRepresentation.getAttributes().getNamedItem(attributeName).setNodeValue(value.toLowerCase());
+    	// For 1.15
+    	nodeRepresentation.getAttributes().getNamedItem(attributeName).setNodeValue(value);
     }
 
-    public final void removeAttribute(String attributeName)
-    {
-        attributeName = attributeName.toLowerCase();
-        this.attributes.remove(attributeName);
-        this.nodeRepresentation.getAttributes().removeNamedItem(attributeName);
-        level.setIsDirty(true,false);
-    }
+    // 1.15 Tentatively removed
+//    public final void removeAttribute(String attributeName)
+//    {
+//        attributeName = attributeName.toLowerCase();
+//        this.attributes.remove(attributeName);
+//        this.nodeRepresentation.getAttributes().removeNamedItem(attributeName);
+//        level.setIsDirty(true,false);
+//    }
+    
     
     /** This method returns true if an attribute with name attributeName is defined for this Markable, i.e. if it 
        has a non-null value in this.attributes, false otherwise. */
     public final boolean isDefined(String attributeName)
     {
-        attributeName = attributeName.toLowerCase();
+//        attributeName = attributeName.toLowerCase();
         return this.attributes.containsKey(attributeName);
     }
 
-    public final Markable cloneMarkable()
-    {
-        System.out.println(nodeRepresentation.getAttributes().toString());
-        Markable result = new Markable(this.nodeRepresentation,this.ID,this.fragments,new HashMap(this.attributes),this.level);
-        return result;
-    }
+    // 1.15 Tentatively removed    
+//    public final Markable cloneMarkable()
+//    {
+//        System.out.println(nodeRepresentation.getAttributes().toString());
+//        Markable result = new Markable(this.nodeRepresentation,this.ID,this.fragments,new HashMap<String, String>(this.attributes),this.level);
+//        return result;
+//    }
     
-    protected void finalize()
-    {
-        try
-        {
-            super.finalize();
-        }
-        catch (java.lang.Throwable ex)
-        {
-            ex.printStackTrace();
-        }
-    }
   
 }
