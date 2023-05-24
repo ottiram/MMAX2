@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Mark-Christoph Müller
+ * Copyright 2007 Mark-Christoph Mï¿½ller
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,10 +66,10 @@ public class MMAX2MarkableSetBrowser extends javax.swing.JFrame implements java.
     private int requiredSetSize=-1;
     
     public MMAX2MarkableSetBrowser(MMAX2 _mmax2) 
-    {
-        super();
+    {    	    	
         addWindowListener(this);
         mmax2 = _mmax2;
+        
         discourse = mmax2.getCurrentDiscourse();
                                
         root = new DefaultMutableTreeNode("Document");
@@ -145,10 +145,41 @@ public class MMAX2MarkableSetBrowser extends javax.swing.JFrame implements java.
         menu.add(panel);
         setJMenuBar(menu);
         setTitle("MMAX2 Markable Set Browser ["+mmax2.registerMarkableSetBrowser(this)+"]");
+               
+        if (mmax2.getIsRendering())
+        {
+        	displayOneSet(mmax2.getRenderedMarkableSet(), mmax2.getCurrentPrimaryMarkable());
+        }        
+
         setVisible(true);
-        pack();
+        pack();                
+       
     }    
         
+    public final void displayOneSet(MarkableSet set, Markable primary)
+    {    
+    	if (set != null)
+    	{
+            DefaultMutableTreeNode setNode = new DefaultMutableTreeNode();
+            setNode.setUserObject(set);
+            root.add(setNode);               
+            ArrayList<Markable> allElements = new ArrayList<Markable>(java.util.Arrays.asList(set.getOrderedMarkables()));
+            int selIndex=-1;
+            for (int b=0;b<allElements.size();b++)
+            {
+            	if ((Markable)allElements.get(b)==primary)
+            	{
+            		selIndex=b;
+            	}
+                DefaultMutableTreeNode elementNode = new DefaultMutableTreeNode(((Markable)allElements.get(b)).toString());
+                elementNode.setUserObject((Markable)allElements.get(b));
+                setNode.add(elementNode);
+            }
+            tree.expandPath(new TreePath(setNode.getPath()));
+            tree.setSelectionInterval(selIndex+2,selIndex+2);
+    	}    	
+    }
+    
     public final void update()
     {
         updateSetDisplay((String)levelBox.getSelectedItem(),(String)attributeBox.getSelectedItem());
@@ -173,6 +204,8 @@ public class MMAX2MarkableSetBrowser extends javax.swing.JFrame implements java.
         // was selected on that level, and updates the displayed tree to reflect
         // all sets belonging to that attribute. 
                
+        System.err.println(levelName);
+        System.err.println(attributeName);
         HashSet expanded = new HashSet();
         int setCount = root.getChildCount();
         for (int z=0;z<setCount;z++)
@@ -243,7 +276,7 @@ public class MMAX2MarkableSetBrowser extends javax.swing.JFrame implements java.
             MMAX2Attribute[] attribs = level.getCurrentAnnotationScheme().getAttributesByType(AttributeAPI.MARKABLE_SET);
             for (int z=0;z<attribs.length;z++)
             {
-                attributeBox.addItem(attribs[z].getDisplayAttributeName());
+                attributeBox.addItem(attribs[z].getDisplayName());
             }
         }
         attributeBox.addActionListener(this);
@@ -261,7 +294,7 @@ public class MMAX2MarkableSetBrowser extends javax.swing.JFrame implements java.
    
     
     public final void dismiss()
-    {
+    {    
         mmax2.unregisterMarkableSetBrowser(this);
         dispose();
     }

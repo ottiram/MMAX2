@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Mark-Christoph M�ller
+ * Copyright 2021 Mark-Christoph Müller
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License. */
 
+/* re-worked for version 1.15 */
 package org.eml.MMAX2.annotation.markables;
 
 // XML Parsing
@@ -26,35 +27,43 @@ import org.apache.xerces.parsers.DOMParser;
 import org.eml.MMAX2.annotation.scheme.MMAX2AnnotationScheme;
 import org.xml.sax.InputSource;
 
+
 /** Helper class for loading markable XML files and converting them to MarkableLevel objects. */
 public class MarkableFileLoader 
-{    
+{
+	boolean VERBOSE = false;
+	boolean DEBUG = false;
+
     protected MarkableLevel currentMarkableLevel=null;
     
-    /** Creates new MarkableFileLoader */
-    public MarkableFileLoader() 
+	public MarkableFileLoader()
+	{
+		try { if (System.getProperty("verbose").equalsIgnoreCase("true")) {VERBOSE = true;} }
+		catch (java.lang.NullPointerException x) { }
+
+		try { if (System.getProperty("debug").equalsIgnoreCase("true")) {DEBUG = true;} }
+		catch (java.lang.NullPointerException x) { }
+	}
+
+    public boolean isVerbose()
     {
-        
+    	return VERBOSE;
     }
-        
+	
+    public boolean isDebug()
+    {
+    	return DEBUG;
+    }
+    
     /** Load and parse markable file of name fileName. */
     final public void load(String fileName, String levelName, String schemeFileName, String customizationFileName, String startupMode)
     {
-    	boolean verbose = true;
-    	
-    	String verboseVar = System.getProperty("verbose");
-    	if (verboseVar != null && verboseVar.equalsIgnoreCase("false"))
-    	{
-    		verbose = false;
-    	}
-    	
+        if (isVerbose()) System.err.println("\n  Loading markable file "+fileName+" ... ");    	
         DOMParser parser = new DOMParser();    
         DocumentImpl markableDOM = null;
         
         try
-        {
-            parser.setFeature("http://xml.org/sax/features/validation",false);
-        }
+        { parser.setFeature("http://xml.org/sax/features/validation",false); }
         catch (org.xml.sax.SAXNotRecognizedException ex)
         {
             ex.printStackTrace();            
@@ -79,28 +88,22 @@ public class MarkableFileLoader
                 writer.flush();
                 writer.close();
             }
-            catch (java.io.IOException ex)
-            {
-                System.err.println(ex.toString());
-            }            
+            catch (java.io.IOException ex) { System.err.println(ex.toString()); }            
         }
-                
-        try
-        {
-            //parser.parse(new InputSource("FILE:"+fileName));
-            parser.parse(new InputSource(new File(fileName).toURI().toString()));
-        }
+
+        if (isVerbose()) System.err.print("   Loading "+levelName.toUpperCase()+" markables ... ");
+        try { parser.parse(new InputSource(new File(fileName).toURI().toString())); }
         catch (org.xml.sax.SAXParseException exception)
         {
-            String error = "Line: "+exception.getLineNumber()+" Column: "+exception.getColumnNumber()+"\n"+exception.toString();            
+            String error = "Line: "+exception.getLineNumber()+" Column: "+exception.getColumnNumber()+"\n"+exception.toString();
+            System.err.println(error);
             JOptionPane.showMessageDialog(null,error,"MarkableFileLoader: "+fileName,JOptionPane.ERROR_MESSAGE);
-            //System.exit(0);
         }                
         catch (org.xml.sax.SAXException exception)
         {
             String error = exception.toString();
+            System.err.println(error);
             JOptionPane.showMessageDialog(null,error,"MarkableFileLoader: "+fileName,JOptionPane.ERROR_MESSAGE);
-            //System.exit(0);
         }
         catch (java.io.IOException exception)
         {
@@ -109,33 +112,21 @@ public class MarkableFileLoader
         }
         
         markableDOM =(DocumentImpl) parser.getDocument();
-
-                
-        // Create default attributes for new MarkableLevel, without blackAndWhiteDefault !!
-        
-        //System.err.println("attribs "+attributeString);
-        
-        //SimpleAttributeSet attributes = MMAX2.createSimpleAttributeSet(attributeString,false);
-        //SimpleAttributeSet attributes = new SimpleAttributeSet();
-        
-        
+        int c=markableDOM.getElementsByTagName("markable").getLength();
+        if (isVerbose()) System.err.println(c+" markables have been loaded!");                                        
         
         /** Create Annotation scheme object to pass to constructor */
-        if (verbose) System.err.println("   Creating anno scheme");
+        if (isVerbose()) System.err.println("   Creating annotation scheme for "+levelName.toUpperCase()+" markables ...");
         MMAX2AnnotationScheme currentScheme = new MMAX2AnnotationScheme(schemeFileName);
-                
-        /** Create MarkableLevel object from currently loaded Markables. */
-        if (verbose) System.err.println("   Creating markable level");
-        currentMarkableLevel = new MarkableLevel(markableDOM,fileName,levelName,currentScheme,customizationFileName);
+        if (isVerbose()) System.err.println("   Done creating annotation scheme");
         
-        if (startupMode.equalsIgnoreCase("visible"))
-        {
-            currentMarkableLevel.setVisible();
-        }
-        else if (startupMode.equalsIgnoreCase("inactive"))
-        {
-            currentMarkableLevel.setInactive();
-        }
+        /** Create MarkableLevel object from currently loaded Markables. */
+        if (isVerbose()) System.err.println("   Creating markable level "+levelName.toUpperCase()+" ...");
+        currentMarkableLevel = new MarkableLevel(markableDOM, fileName, levelName, currentScheme, customizationFileName);
+        if (isVerbose()) System.err.println("   Done creating markable level ...");
+        
+        if (startupMode.equalsIgnoreCase("visible")) 		{ currentMarkableLevel.setVisible(); }
+        else if (startupMode.equalsIgnoreCase("inactive")) 	{ currentMarkableLevel.setInactive(); }
     }
     
     /** Get currently loaded MarkableLevel from this MarkableFileLoader. */

@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Mark-Christoph M�ller
+ * Copyright 2021 Mark-Christoph Müller
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package org.eml.MMAX2.core;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.GraphicsEnvironment;
@@ -33,8 +32,6 @@ import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
@@ -45,7 +42,6 @@ import java.util.StringTokenizer;
 
 import javax.swing.Box;
 import javax.swing.ButtonGroup;
-import javax.swing.ImageIcon;
 import javax.swing.JCheckBox;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JFileChooser;
@@ -60,13 +56,12 @@ import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JScrollPane;
 import javax.swing.JViewport;
 import javax.swing.KeyStroke;
-import javax.swing.Popup;
-import javax.swing.PopupFactory;
 import javax.swing.Timer;
 import javax.swing.text.DefaultStyledDocument;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 
+// For printing only
 import org.apache.batik.svggen.SVGGraphics2D;
 import org.apache.xerces.dom.DocumentImpl;
 import org.apache.xerces.parsers.DOMParser;
@@ -97,9 +92,10 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
 public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.event.ComponentListener , java.awt.event.ActionListener
-{              		
-    private float selectedLineSpacing = (float)0.5;
-	private boolean askForValidation=true;
+{              		    
+    private static String versionString = "1.15.034";
+
+	public float selectedLineSpacing = (float)0.5;
 	
     private boolean isBatchPluginMode=false;    
     private int oneClickAnnotationGroupValue = 0;
@@ -108,9 +104,9 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
     private Timer waitCursorTimer = null;
     private Timer autoSaveTimer = null;
     
-    private HashMap markableSelectorAttributes = new HashMap();
+    private HashMap<String, String> markableSelectorAttributes = new HashMap<String, String>();
     private String currentCommonBasedataPath ="";
-    private HashSet switchHash = new HashSet();
+    private HashSet<String> switchHash = new HashSet<String>();
     private String commonPathsFileName="";
     
     private Markable currentPrimaryMarkable;
@@ -148,27 +144,24 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
     private JCheckBox showMLCPBox = null;
     
     private Box mainBox = null;
-    private Box statusBox = null;
-
-    private JPanel statusPanel = null;    
+    // Deactivated for now
+    //private Box statusBox = null;
+    //private JPanel statusPanel = null;    
     private JLabel statusBar = null;
         
-    //private static String versionString = "1.13.003";
-    private static String versionString = "1.14.005";
-    
     // private, because accessed by get/set methods only
     private JScrollPane currentScrollPane = null;
     private MMAX2TextPane currentTextPane = null;    
     private MMAX2Document currentDocument = null;
     private MMAX2Discourse currentDiscourse = null;
     
-    private ArrayList markableBrowsers = null;
+    private ArrayList<MMAX2MarkableBrowser> markableBrowsers = null;
     private int markableBrowserCount = 0;
 
-    private ArrayList markableSetBrowsers = null;
+    private ArrayList<MMAX2MarkableSetBrowser> markableSetBrowsers = null;
     private int markableSetBrowserCount = 0;
     
-    private ArrayList markablePointerBrowsers = null;
+    private ArrayList<MMAX2MarkablePointerBrowser> markablePointerBrowsers = null;
     private int markablePointerBrowserCount = 0;
     
     public static Font standardFont = null;
@@ -199,7 +192,7 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
     // New March 31st, 2006: Use as default
     private boolean useFancyMultilineRendering = true;
     
-    private ArrayList markableRelationsToRender;
+    private ArrayList<Renderable> markableRelationsToRender;
     public boolean initializing = true;
         
     private Dimension screenSize = null;
@@ -235,13 +228,29 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
     
     MMAX2AnnotationHintWindow hintWindow = null;
     
+    boolean VERBOSE = false;
+    boolean DEBUG = false;
+	boolean VALIDATE =false; // this replaces the -no_validation param 
+    
     public MMAX2()
-    {                       
-        setIconImage(Toolkit.getDefaultToolkit().getImage("main.gif"));
+    {                 	
+    	try { if (System.getProperty("verbose").equalsIgnoreCase("true")) {VERBOSE = true;} }
+    	catch (java.lang.NullPointerException x) { }
+
+    	try { if (System.getProperty("debug").equalsIgnoreCase("true")) {DEBUG = true;} }
+    	catch (java.lang.NullPointerException x) { }
+    	
+    	try { if (System.getProperty("validate").equalsIgnoreCase("true")) {VALIDATE = true;} }
+    	catch (java.lang.NullPointerException x) { }
+    	
+    	setIconImage(Toolkit.getDefaultToolkit().getImage("main.gif"));
         screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         screenWidth = (int) screenSize.width;
         screenHeight = (int) screenSize.height;        
-        
+
+        standardFont = new JLabel().getFont().deriveFont((float)11.0);
+        markableSelectorFont = new JLabel().getFont().deriveFont((float)11.0);       
+               
         addComponentListener(this);
             
         currentScrollPane = new JScrollPane();
@@ -249,26 +258,38 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
 
         mainBox = Box.createVerticalBox();
         mainBox.add(currentScrollPane);
-        statusPanel = new JPanel();
-        statusPanel.setOpaque(true);
-        statusPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
-        statusBar = new JLabel("Welcome to "+versionString);
-        
-        standardFont = statusBar.getFont().deriveFont((float)11.0);
-        markableSelectorFont = statusBar.getFont().deriveFont((float)11.0);
-        
-        statusBar.setForeground(Color.black);      
-        statusBox = Box.createHorizontalBox();
-        statusBox.add(statusBar);
-        
-        statusPanel.add(statusBox);
+
+//        statusPanel = new JPanel();
+//        statusPanel.setOpaque(true);
+//        statusPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
+        statusBar = new JLabel("Welcome to "+versionString);       
+//        statusBar.setForeground(Color.black);      
+//        statusBox = Box.createHorizontalBox();
+//        statusBox.add(statusBar);        
+//        statusPanel.add(statusBox);        
+//        mainBox.add(statusBox);
+
         setContentPane(mainBox);
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);             
         addWindowListener(new MMAX2MainWindowListener());
                 
-        markableRelationsToRender = new ArrayList();       
+        markableRelationsToRender = new ArrayList<Renderable>();       
+    }   
+    
+    public String getVersionString()
+    {
+    	return versionString;
+    }
+        
+    public boolean isVerbose()
+    {
+    	return VERBOSE;
     }
 
+    public boolean isDebug()
+    {
+    	return DEBUG;
+    }
     
     public final void setUseFancyMultilineRendering(boolean status)
     {
@@ -599,6 +620,7 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
             markableRelationsToRender.add(set);
             set.select((Graphics2D)getCurrentTextPane().getGraphics(), this.getCurrentDocument(), this.getCurrentPrimaryMarkable());
             getCurrentTextPane().startAutoRefresh();
+//            repaint(); // new 1.15
             isRendering = true;
         }
     }
@@ -627,7 +649,7 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
     {
         for (int z=markableRelationsToRender.size()-1;z>=0;z--)
         {
-            if (((Renderable)markableRelationsToRender.get(z)).isOpaque())
+            if (((Renderable)markableRelationsToRender.get(z)).isAmbient())
             {
                 ((Renderable)markableRelationsToRender.get(z)).unselect(getCurrentDocument());
                 markableRelationsToRender.remove(z);                
@@ -675,6 +697,26 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
     }
 
 
+    public final MarkableSet getRenderedMarkableSet() {
+    	MarkableSet res = null;
+//    	System.err.println(isRendering);
+//    	System.err.println(markableRelationsToRender.size());    	
+//    	System.err.println(markableRelationsToRender.get(0));
+    	if (isRendering)
+    	{
+    		for (int b=0;b<markableRelationsToRender.size();b++)
+    		{
+    			if (markableRelationsToRender.get(b) instanceof MarkableSet)
+    			{
+    				res = (MarkableSet) markableRelationsToRender.get(b);
+    				break;
+    			}
+    		}
+    	}
+    		
+    	return res;
+    }
+    
     public final boolean isCurrentlyBeingRendered(Renderable renderable)
     {
         if (markableRelationsToRender == null)
@@ -870,18 +912,20 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
      */
     public static void main(String[] args)
     {        
+    	System.out.println("\nThis is MMAX2 "+versionString+"\n");    	
+    	
         /** Create new MMAX2 instance */
-        MMAX2 mmax2 = null;
-        
+        MMAX2 mmax2 = null;        
         try
-        {
-        	mmax2 = new MMAX2();
-        }
+        { mmax2 = new MMAX2(); }
         catch (HeadlessException ex)
-        {
+        { 
         	System.err.println("MMAX2 main application cannot be run without a graphical display!");
         	System.exit(0);
         }
+        
+        mmax2.setTitle("MMAX2 "+versionString);
+
         String toLoad = "";
         for (int z=0;z<args.length;z++)
         {
@@ -894,18 +938,13 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
                 mmax2.commonPathWasSetViaConsole = true;
             }
             // Jan. 6. 2021: Add switch to suppress validation option at startup
-            else if (args[z].equalsIgnoreCase("-no_validation"))
+            else if (args[z].equalsIgnoreCase("-no_validation")) 
             {
-                mmax2.askForValidation=false;
+            	System.err.println("-no_validation param is deprecated! Validation is deactivated by default.\nUse -Dvalidate to activate the validation prompt!\n");
             }
-            else if (args[z].startsWith("-")==false)
-            {
-                toLoad = args[z];
-            }
+            else if (args[z].startsWith("-")==false) { toLoad = args[z]; }
         }
-        
-        mmax2.setTitle("MMAX2 "+versionString);
-        
+                
         mmax2.createMenu();
         mmax2.initGlobalStyles();        
 
@@ -915,10 +954,7 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
         mmax2.setSize(initialWidth,initialHeight);   
         mmax2.setLocation((mmax2.getScreenWidth()/2)-initialWidth/2,(mmax2.getScreenHeight()/2)-initialHeight/2);
                    
-        if (toLoad.equals("")==false)
-        {            
-            mmax2.loadMMAXFile(toLoad);
-        }
+        if (toLoad.equals("")==false) { mmax2.loadMMAXFile(toLoad); }
 
         mmax2.setVisible(true);        
         mmax2.toFront();        
@@ -998,17 +1034,7 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
     }
     
     private final void loadMMAXFile(String fileName)
-    {    
-    	
-    	boolean verbose = true;
-    	
-    	String verboseVar = System.getProperty("verbose");
-    	if (verboseVar != null && verboseVar.equalsIgnoreCase("false"))
-    	{
-    		verbose = false;
-    	}
-    	
-    	
+    {        	    	
         if (hintWindow != null)
         {
             hintWindow.setVisible(false);
@@ -1048,9 +1074,8 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
         }
         currentDiscourse = null;
         currentDocument = null;
-        markableSelectorAttributes = new HashMap();
+        markableSelectorAttributes = new HashMap<String, String>();
         showInPopupMenu.removeAll();
-        System.gc();
         
         currentTextPane = new MMAX2TextPane();
         currentTextPane.setCursor(new Cursor(Cursor.WAIT_CURSOR));
@@ -1063,81 +1088,56 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
         currentScrollPane.getHorizontalScrollBar().addAdjustmentListener(currentTextPane);
         
         currentScrollPane.getViewport().add(currentTextPane); // new 
-
-        /** Create DiscourseLoader from supplied .mmax file */
-        if (verbose) System.err.print("Loading Discourse ... ");
-        long temp = System.currentTimeMillis();
         
-        MMAX2DiscourseLoader loader = new MMAX2DiscourseLoader(fileName, true,getCommonPathsFileName());
+        /** Create DiscourseLoader from supplied .mmax file */
+        if (isVerbose()) System.err.println("Loading MMAX2 discourse from "+fileName+" ...");        
+        MMAX2DiscourseLoader loader = new MMAX2DiscourseLoader(fileName, true, getCommonPathsFileName());
+        if (isVerbose()) System.err.println("Done loading MMAX2 discourse!");
         
         // NEW: Feb. 25, 2005: Tell MMAX about query directory
         setCommonQueryPath(loader.getCommonQueryPath());
         
         currentWorkingDirectory = loader.getWorkingDirectory();
-        if (verbose) System.err.println("Current working directory set to "+currentWorkingDirectory);
-        
-        // Set 
+        if (isVerbose()) System.err.println("Setting current working directory to "+currentWorkingDirectory);        
         currentAnnotationDirectory = new File(fileName).getParent();
-        
-        if (verbose) System.err.println("done in "+(System.currentTimeMillis()-temp)+" milliseconds");
+               
         /** Assign Discourse loaded by DiscourseLoader to MMAX2 instance. */
         currentDiscourse = loader.getCurrentDiscourse();
         /** Supply Discourse with reference to current MMAX2 instance. */
         currentDiscourse.setMMAX2(this);
-        /** Destroy reference to DiscourseLoader. */
         /** Create new (empty) Document. */
-        currentDocument = new MMAX2Document("default",MMAX2Constants.DEFAULT_FONT_SIZE);
+        currentDocument = new MMAX2Document("default", MMAX2Constants.DEFAULT_FONT_SIZE);
         /** Supply Document with reference to current MMAX2 instance. */
         currentDocument.setMMAX2(this);
         
         // Do this before style sheet application
-        initializeUserSwitches(loader.getUserSwitches());        
-        
-        if (verbose) System.err.print("Applying stylesheet "+currentDiscourse.getCurrentStyleSheet()+" ... ");
-        temp = System.currentTimeMillis();
+        initializeUserSwitches(loader.getUserSwitches());
         currentDiscourse.reapplyStyleSheet();
-        if (verbose) System.err.println("done in "+(System.currentTimeMillis()-temp)+" milliseconds");
-
         currentDiscourse.getCurrentMarkableChart().getCurrentLevelControlPanel().setStyleSheetFileNames(currentDiscourse.getStyleSheetFileNames());
-        if (verbose) System.err.print("Creating Markable mappings ... ");
 
-        temp = System.currentTimeMillis();        
         // Call to create e.g. DiscoursePositionToMarkableMappings
         currentDiscourse.getCurrentMarkableChart().createDiscoursePositionToMarkableMappings();
-        currentDiscourse.getCurrentMarkableChart().setMarkableLevelDisplayPositions();
-        
+        currentDiscourse.getCurrentMarkableChart().setMarkableLevelDisplayPositions();        
         currentDiscourse.getCurrentMarkableChart().initMarkableRelations();        
         currentDiscourse.getCurrentMarkableChart().initAttributePanelContainer();
         currentDiscourse.getCurrentMarkableChart().initShowInMarkableSelectorPopupMenu();
         currentDiscourse.getCurrentMarkableChart().updateLabels();
         currentDiscourse.getCurrentMarkableChart().initAnnotationHints();
-        if (verbose) System.err.println("done in "+(System.currentTimeMillis()-temp)+" milliseconds");
-    
-        currentTextPane.setMMAX2(this); // sets mmax2 on currentTextPane.currentCaretListener and MouseListener as well !!
+        currentTextPane.setMMAX2(this);
         currentTextPane.setStyledDocument((DefaultStyledDocument)currentDocument); 
         initializing = false;   
         
-        getGlassPane().setVisible(false);
-        
-        try
-        {
-            pack();
-        }
-        catch (java.lang.NullPointerException ex)
-        {
-        }
+        getGlassPane().setVisible(false);        
+        try { pack(); } 
+        catch (java.lang.NullPointerException ex) { }
         setTitle("MMAX2 "+versionString+" "+fileName);
         
-        currentMMAX2FileName=fileName;
-        
-        updateIsAnnotationModified();
-        
-        autoSaveMenu.setEnabled(true);
-        
+        currentMMAX2FileName=fileName;        
+        updateIsAnnotationModified();        
+        autoSaveMenu.setEnabled(true);        
         enableBasedataEditing.setEnabled(true);
         searchItem.setEnabled(true);
         markableBrowserItem.setEnabled(true);
-
         browserMenu.setEnabled(true);
         setBrowserItem.setEnabled(true);
         pointerBrowserItem.setEnabled(true);
@@ -1147,23 +1147,17 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
         currentDiscourse.getCurrentMarkableChart().initializeSaveMenu(saveLevelMenu);        
         
         // Added 2021 January 31
-        requestSetLineSpacing(selectedLineSpacing+"");
-        
+        requestSetLineSpacing(selectedLineSpacing+"");        
         arrangeWindows();
         requestRefreshDisplay();
         
-        if (askForValidation)
-        {
-        	showValidationRequestDialogWindow();
-        }
+        if (VALIDATE) { showValidationRequestDialogWindow(); }
         
-        hintWindow = new MMAX2AnnotationHintWindow();
-                        
-        initPluginMenu();
-        
+        hintWindow = new MMAX2AnnotationHintWindow();                        
+        initPluginMenu();        
         setVisible(true);        
         loader = null;
-        System.gc();    
+        System.out.println("MMAX2 is ready!");
     }
     
     private final void initializeUserSwitches(String[] switches)
@@ -1276,7 +1270,7 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
            }
             
         });
-        saveAll.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, InputEvent.CTRL_MASK));
+//        saveAll.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, InputEvent.CTRL_MASK));
         saveAll.setEnabled(false);
         
         saveMenu.add(saveAll);
@@ -1765,9 +1759,7 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
         		
         	}
         }
-        
-        
-        
+                        
         SimpleAttributeSet result = new SimpleAttributeSet();
         StyleConstants.setLineSpacing(result, selectedLineSpacing);
         getCurrentDocument().setParagraphAttributes(0, getCurrentDocument().getLength(),result, false);
@@ -1847,38 +1839,24 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
     
     private final void initPluginMenu()
     {
-        if (pluginMenu != null)
-        {            
-            pluginMenu.removeAll();
-        }
+        if (pluginMenu != null) {pluginMenu.removeAll(); }
         
         DOMParser parser = new DOMParser();
         DocumentImpl PLUGINDOM = null;
         
         String fileName="plugins.xml";
         
-        try
-        {
-            parser.setFeature("http://xml.org/sax/features/validation",false);
-        }
-        catch (org.xml.sax.SAXNotRecognizedException ex)
+        try { parser.setFeature("http://xml.org/sax/features/validation",false); }
+        catch (org.xml.sax.SAXNotRecognizedException | org.xml.sax.SAXNotSupportedException ex)
         {
             ex.printStackTrace();            
             return;
         }
-        catch (org.xml.sax.SAXNotSupportedException ex)
-        {
-            ex.printStackTrace();
-            return;
-        }                
-        try
-        {            
-            //parser.parse(new InputSource("FILE:"+fileName));
-        	parser.parse(new InputSource(new File(fileName).toURI().toString()));
-        }
+
+        try { parser.parse(new InputSource(new File(fileName).toURI().toString())); }
         catch (java.io.FileNotFoundException ex)
         {
-            System.err.println("No plugin.xml found");
+            if (isVerbose()) System.err.println("No plugin.xml found");
             return;
         }        
         catch (org.xml.sax.SAXParseException exception)
@@ -1886,16 +1864,12 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
             String error = "Line: "+exception.getLineNumber()+" Column: "+exception.getColumnNumber()+"\n"+exception.toString();            
             JOptionPane.showMessageDialog(null,error,"PluginLoader: "+fileName,JOptionPane.ERROR_MESSAGE);
         }                
-        catch (org.xml.sax.SAXException exception)
+        catch (org.xml.sax.SAXException | java.io.IOException exception)
         {
             String error = exception.toString();
             JOptionPane.showMessageDialog(null,error,"PluginLoader: "+fileName,JOptionPane.ERROR_MESSAGE);
         }
-        catch (java.io.IOException exception)
-        {
-            String error = exception.toString();
-            JOptionPane.showMessageDialog(null,error,"PluginLoader: "+fileName,JOptionPane.ERROR_MESSAGE);
-        }                      
+        
         PLUGINDOM = (DocumentImpl) parser.getDocument();
         
         NodeList pluginList = PLUGINDOM.getElementsByTagName("plugin");
@@ -2210,14 +2184,16 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
     private final void requestSetFontName(String newFontName)
     {
         currentDisplayFontName = newFontName;
-        getCurrentDiscourse().getMMAX2().getCurrentDocument().setDisplayFontName(newFontName);
+        getCurrentDiscourse().getMMAX2().getCurrentDocument().setDisplayFontName(currentDisplayFontName);
+        getCurrentDiscourse().getMMAX2().getCurrentTextPane().setFont(new Font(currentDisplayFontName, Font.PLAIN, currentDisplayFontSize));
         requestRefreshDisplay();
     }
 
     private final void requestSetFontSize(String newFontSize)
     {
-        currentDisplayFontSize = new Integer(newFontSize).intValue();        
+        currentDisplayFontSize = Integer.parseInt(newFontSize);        
         getCurrentDiscourse().getMMAX2().getCurrentDocument().setDisplayFontSize(currentDisplayFontSize);
+        getCurrentDiscourse().getMMAX2().getCurrentTextPane().setFont(new Font(currentDisplayFontName, Font.PLAIN, currentDisplayFontSize));
         requestRefreshDisplay();
     }
 
@@ -2325,7 +2301,7 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
         System.exit(0);
     }
     
-    private final void requestSaveAll()
+    public final void requestSaveAll()
     {
         currentDiscourse.getCurrentMarkableChart().saveAllMarkableLevels();
         currentDiscourse.saveBasedata("");
@@ -2384,7 +2360,7 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
         loadMMAXFile(requestedFileName);
     }
     
-    private final void requestLoadFile()
+    public final void requestLoadFile()
     {
         if (getIsAnnotationModified())
         {
@@ -2452,24 +2428,24 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
                 JOptionPane.showMessageDialog(null,"Note: MMAX2 will use the common paths file "+getCommonPathsFileName()+" supplied from the console!\nRestart the tool without the -common_paths argument to use the default common_paths.xml!","MMAX2 loader",JOptionPane.INFORMATION_MESSAGE);
             }
             
-            File selectedFile = chooser.getSelectedFile();
- //           .getAbsolutePath();
-//            System.out.println(requestedFileName);
-
-//            currentAnnotationDirectory = selectedFile.getParent();
-            
+            File selectedFile = chooser.getSelectedFile();            
             loadMMAXFile(selectedFile.getAbsolutePath());
         }                
     }
     
+    
+    /******************************************************************************************/
+    // Rendering-related stuff
+    
     /** This method is called automatically to redraw lines after display changes. */
     final public void redraw(SVGGraphics2D svgGraph)
+    //final public void redraw(Graphics2D graphics)
     {
         Graphics2D graphics = (Graphics2D) getCurrentTextPane().getGraphics();
         if (svgGraph != null)
         {
             graphics = svgGraph;
-        }
+        } 
         MMAX2Document doc = getCurrentDocument();
         if (getRedrawAllOnNextRefresh())
         {            
@@ -2482,6 +2458,7 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
         {
             for (int z=0;z<markableRelationsToRender.size();z++)
             {
+            	// System.err.println("99");
                 ((Renderable)markableRelationsToRender.get(z)).refresh(graphics);
             }            
         }     
@@ -2657,26 +2634,14 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
     {
         public void windowActivated(WindowEvent we)
         {
-            try
-            {
-                getCurrentTextPane().startAutoRefresh();               
-            }
-            catch (java.lang.NullPointerException ex)
-            {
-
-            }
+//            try { getCurrentTextPane().startAutoRefresh(); }
+//            catch (java.lang.NullPointerException ex) { }
         }
         
         public void windowDeiconified(WindowEvent we)
         {
-            try
-            {
-                getCurrentTextPane().startAutoRefresh();
-            }
-            catch (java.lang.NullPointerException ex)
-            {
-
-            }
+//            try { getCurrentTextPane().startAutoRefresh(); }
+//            catch (java.lang.NullPointerException ex) { }
         }
         
         public void windowClosing(WindowEvent we)
@@ -2685,18 +2650,6 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
         }
     }           
     
-    public void finalize()
-    {
-//        System.err.println("Finalizing MMAX2");
-        try
-        {
-            super.finalize();
-        }
-        catch (java.lang.Throwable th)
-        {
-            th.printStackTrace();
-        }
-    }
     
     public void componentHidden(java.awt.event.ComponentEvent e) {
     }
@@ -2778,7 +2731,7 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
                     });
     		}
     	}
-    	else // The timer migh be running already
+    	else // The timer might be running already
     	{
     		if (autoSaveTimer.isRunning())
     		{

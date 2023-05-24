@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Mark-Christoph M�ller
+ * Copyright 2021 Mark-Christoph Müller
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package org.eml.MMAX2.annotation.markables;
 
 import java.awt.Color;
+import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.ActionListener;
@@ -30,6 +31,7 @@ import javax.swing.JViewport;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 
+import org.apache.batik.svggen.SVGGraphics2D;
 import org.apache.xpath.NodeSet;
 import org.eml.MMAX2.annotation.scheme.MMAX2Attribute;
 import org.eml.MMAX2.api.AttributeAPI;
@@ -59,7 +61,7 @@ public class MarkableChart
     public MMAX2AttributePanelContainer attributePanelContainer = null;
     
     /** This HashMap contains all MarkableLevels in this MarkableChart, mapped to their level names as hash keys. */
-    private HashMap levels = null;   
+    private HashMap<String, MarkableLevel> levels = null;   
     /** Array of MarkableLevels contained in this MarkableChart, in relevant order. */
     private MarkableLevel[] orderedLevels = null;
     /** Reference to MMAX2Discourse object that this MarkableChart belongs to. */
@@ -81,22 +83,13 @@ public class MarkableChart
     {
         currentLevelControlPanel = new MarkableLevelControlPanel(_discourse);
         currentLevelControlWindow = null;
-        try
-        {
-        	currentLevelControlWindow = new MarkableLevelControlWindow(currentLevelControlPanel);
-        }
-        catch (java.awt.HeadlessException ex)
-        {
-        	
-        }
+        try { currentLevelControlWindow = new MarkableLevelControlWindow(currentLevelControlPanel); }
+        catch (java.awt.HeadlessException ex) { }
         currentDiscourse = _discourse;
-        levels = new HashMap();
+        levels = new HashMap<String, MarkableLevel>();
         orderedLevels = new MarkableLevel[0];
         size = 0;
-        if (currentDiscourse.getHasGUI()) 
-        {
-            attributePanelContainer = new MMAX2AttributePanelContainer();
-        }
+        if (currentDiscourse.getHasGUI())  { attributePanelContainer = new MMAX2AttributePanelContainer(); }
     }
 
     public final int getSelectionStart()
@@ -506,20 +499,20 @@ public class MarkableChart
         System.gc();
     }
     
-    protected void finalize()
-    {
-        
-//        System.err.println("MarkableChart is being finalized!");        
-        try
-        {
-            super.finalize();
-        }
-        catch (java.lang.Throwable ex)
-        {
-            ex.printStackTrace();
-        }     
-               
-    }
+//    protected void finalize()
+//    {
+//        
+////        System.err.println("MarkableChart is being finalized!");        
+//        try
+//        {
+//            super.finalize();
+//        }
+//        catch (java.lang.Throwable ex)
+//        {
+//            ex.printStackTrace();
+//        }     
+//               
+//    }
     
     
     public final void setShowMarkableLevelControlWindow(boolean show)
@@ -536,7 +529,7 @@ public class MarkableChart
     {
         for (int z=0;z<size;z++)
         {
-            ((MarkableLevel) orderedLevels[z]).initMarkableRelations();
+            ((MarkableLevel) orderedLevels[z]).initMarkableRelations(this.getCurrentDiscourse().getMMAX2());
         }          
     }
         
@@ -595,7 +588,7 @@ public class MarkableChart
     {
         for (int z=0;z<this.size;z++)
         {
-            this.attributePanelContainer.addAttributePanel(((MarkableLevel) orderedLevels[z]).getCurrentAnnotationScheme().getCurrentAttributePanel(),((MarkableLevel) orderedLevels[z]).getMarkableLevelName());
+            this.attributePanelContainer.addAttributePanel(((MarkableLevel) orderedLevels[z]).getCurrentAnnotationScheme().getCurrentAttributePanel(),((MarkableLevel) orderedLevels[z]).getMarkableLevelName(), orderedLevels[z].getCurrentAnnotationScheme().getSchemeFileName());
         }  
         this.attributePanelContainer.pack();
         this.attributePanelContainer.setVisible(true);
@@ -632,6 +625,7 @@ public class MarkableChart
         this.size++;
                         
         /** Put also in hash so layers are retrieveable by level name */
+        // Leave as lc when used as hash key
         levels.put(new String(level.getMarkableLevelName().toLowerCase()),level);      
         
         /** Create control in layerControlPanel */
@@ -855,9 +849,9 @@ public class MarkableChart
         return result;
     }
         
-    public final ArrayList getAllStartedMarkables(String deID)
+    public final ArrayList<Markable> getAllStartedMarkables(String deID)
     {
-        ArrayList result = new ArrayList();
+        ArrayList<Markable> result = new ArrayList();
         Markable[] tempResult = null;
         for (int z=0;z<size;z++)
         {
@@ -880,9 +874,9 @@ public class MarkableChart
         return result;
     }
     
-    public final ArrayList getAllEndedMarkables(String deID)
+    public final ArrayList<Markable> getAllEndedMarkables(String deID)
     {
-        ArrayList result = new ArrayList();
+        ArrayList<Markable> result = new ArrayList<Markable>();
         Markable[] tempResult = null;
         for (int z=0;z<size;z++)
         {
@@ -952,48 +946,48 @@ public class MarkableChart
     }
     
     
-    /** This method returns a node list with all _active_ Markables ended at DiscourseElement with ID discourseElementId. Markables 
-        are grouped by levels in MarkableChart layer order (cf. this.orderedLayers[]). Within each group, Markables 
-        are ordered in discourse position order, but with shorter before longer ones (for embedding visualization). */    
-    public final NodeSet getActiveEndedMarkables_bak(String discourseElementId)
-    {
-        ArrayList tempCollection = new ArrayList();
-        NodeSet result = new NodeSet();
-        Markable[] tempResult = null;
-        /** Iterate over all layers */
-        for (int z=0;z<size;z++)
-        {
-            MarkableLevel level = (MarkableLevel) orderedLevels[z];
-            if ((level.getIsActive()|| level.getIsVisible()) && level.isDefined())
-            {
-                // Get array of all markables ending at discourseElementId
-                tempResult = level.getAllMarkablesEndedByDiscourseElement(discourseElementId);
-                if (tempResult != null)
-                {                                        
-                    int len = tempResult.length;
-                    // Add them to temporary ArrayList
-                    for (int o=0;o<len;o++)
-                    {
-                        if (tempResult[o] != null)
-                        {
-                            tempCollection.add((Markable)tempResult[o]);                    
-                        }
-                    }
-                }
-            }
-        }
-        tempResult = null;
-        tempResult = (Markable[]) tempCollection.toArray(new Markable[1]);        
-
-        for (int o=0;o<tempResult.length;o++)
-        {            
-            if (tempResult[o] != null)
-            {
-                result.insertElementAt(tempResult[o].getNodeRepresentation(),o);
-            }
-        }
-        return result;
-    }
+//    /** This method returns a node list with all _active_ Markables ended at DiscourseElement with ID discourseElementId. Markables 
+//        are grouped by levels in MarkableChart layer order (cf. this.orderedLayers[]). Within each group, Markables 
+//        are ordered in discourse position order, but with shorter before longer ones (for embedding visualization). */    
+//    public final NodeSet getActiveEndedMarkables_bak(String discourseElementId)
+//    {
+//        ArrayList tempCollection = new ArrayList();
+//        NodeSet result = new NodeSet();
+//        Markable[] tempResult = null;
+//        /** Iterate over all layers */
+//        for (int z=0;z<size;z++)
+//        {
+//            MarkableLevel level = (MarkableLevel) orderedLevels[z];
+//            if ((level.getIsActive()|| level.getIsVisible()) && level.isDefined())
+//            {
+//                // Get array of all markables ending at discourseElementId
+//                tempResult = level.getAllMarkablesEndedByDiscourseElement(discourseElementId);
+//                if (tempResult != null)
+//                {                                        
+//                    int len = tempResult.length;
+//                    // Add them to temporary ArrayList
+//                    for (int o=0;o<len;o++)
+//                    {
+//                        if (tempResult[o] != null)
+//                        {
+//                            tempCollection.add((Markable)tempResult[o]);                    
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//        tempResult = null;
+//        tempResult = (Markable[]) tempCollection.toArray(new Markable[1]);        
+//
+//        for (int o=0;o<tempResult.length;o++)
+//        {            
+//            if (tempResult[o] != null)
+//            {
+//                result.insertElementAt(tempResult[o].getNodeRepresentation(),o);
+//            }
+//        }
+//        return result;
+//    }
     
     
     public final void setMarkableLevelDisplayPositions()
@@ -1122,7 +1116,7 @@ public class MarkableChart
         MarkableRelation targetRelation = targetAttribute.getMarkableRelation();
         
         // Get list of all markables to copy to target level
-        ArrayList markablesToCopy = (ArrayList)java.util.Arrays.asList(setToCopy.getOrderedMarkables());
+        ArrayList<Markable> markablesToCopy = (ArrayList<Markable>)java.util.Arrays.asList(setToCopy.getOrderedMarkables());
         Markable currentToCopy = null;
         Markable chainInitial = null;
         // Iterate over all markables in set to be copied
@@ -1236,6 +1230,8 @@ public class MarkableChart
         getCurrentDiscourse().getMMAX2().setIgnoreCaretUpdate(false);
     }
     
+    
+    
     /** This method is called by the display caret listener whenever a markabls is right-clicked. */
     public final void markableRightClicked(Markable secondaryMarkable, int displayPos)
     {                
@@ -1313,7 +1309,7 @@ public class MarkableChart
         secondaryMarkable.renderMe(MMAX2Constants.RENDER_NO_HANDLES);
     }
     
-    /** This method is called by the display caret listener whenever a markabls is left-clicked. */
+    /** This method is called by the display caret listener whenever a markable is left-clicked. */
     public final void markableLeftClicked(Markable newClicked)
     {
         // A Markable has been left-clicked. This selects a new primary markable, and resets an existing secondary markable. 
@@ -1454,7 +1450,7 @@ public class MarkableChart
         // Get MarkablePointer with source markable        
         MarkablePointer pointer = relation.getMarkablePointerForSourceMarkable(sourceMarkable);
         // Get all targets
-        ArrayList targets = (ArrayList) java.util.Arrays.asList(pointer.getTargetMarkables());
+        ArrayList<Markable> targets = (ArrayList<Markable>) java.util.Arrays.asList(pointer.getTargetMarkables());
         // Iterate over all targets backwards
         for (int z=targets.size()-1;z>=0;z--)
         {
@@ -1525,6 +1521,7 @@ public class MarkableChart
     
     public final void removeMarkableFromMarkableSet(Markable removee, MarkableSet set, boolean refreshAttributeWindow)//, String constitutingAttribute)
     {        
+    	System.err.println("Removing");
         Markable[] concerned = new Markable[2];
         Markable currentPrimary = currentDiscourse.getMMAX2().getCurrentPrimaryMarkable();
         concerned[0] = removee;
@@ -1580,8 +1577,11 @@ public class MarkableChart
         // Force display to also redraw background of markables with next refresh, thus restoring any highlighting that may be missing
         currentDiscourse.getMMAX2().setRedrawAllOnNextRefresh(true);
         // Make sure the display reflects the new state
+//        Graphics2D graphics = (Graphics2D) currentDiscourse.getMMAX2().getCurrentTextPane().getGraphics();        
         currentDiscourse.getMMAX2().getCurrentViewport().repaint();
-        currentDiscourse.getMMAX2().getCurrentTextPane().startAutoRefresh();
+        //set.refresh(graphics);
+        currentDiscourse.getMMAX2().redraw(null);
+        //currentDiscourse.getMMAX2().getCurrentTextPane().startAutoRefresh();
         doc.commitChanges();
         removee.getMarkableLevel().setIsDirty(true,false);
     }

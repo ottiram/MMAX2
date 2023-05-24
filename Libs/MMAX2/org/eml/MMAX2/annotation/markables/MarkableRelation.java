@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 
 import org.eml.MMAX2.api.MarkableRelationAPI;
+import org.eml.MMAX2.core.MMAX2;
 import org.eml.MMAX2.utils.MMAX2Utils;
 
 public class MarkableRelation implements MarkableRelationAPI
@@ -36,7 +37,7 @@ public class MarkableRelation implements MarkableRelationAPI
     
     /** Color of the line drawn used when rendering sets. */
     private Color lineColor;
-    private Color defaultLineColor;
+    private Color defaultLineColor;    
     /** Style of lines used when rendering sets: MMAX2.STRAIGHT or MMAX2.RCURVE or MMAX2.LCURVE. */
     private int lineStyle;        
     private int defaultLineStyle;
@@ -45,7 +46,9 @@ public class MarkableRelation implements MarkableRelationAPI
     
     private int maxSize;
     private boolean dashed;
-    public MarkableRelation(String _attributeName, int type, boolean _ordered, int _lineWidth, Color _color, int _lineStyle, int _maxSize, boolean _dashed, String _attributeNameToShowInFlag)
+    private MMAX2 mmax2=null;
+    
+    public MarkableRelation(String _attributeName, int type, boolean _ordered, int _lineWidth, Color _color, int _lineStyle, int _maxSize, boolean _dashed, String _attributeNameToShowInFlag, MMAX2 _mmax2)
     {
         attributeNameToShowInFlag = _attributeNameToShowInFlag;
         attributeName = _attributeName;
@@ -58,6 +61,13 @@ public class MarkableRelation implements MarkableRelationAPI
         defaultLineStyle = _lineStyle;
         maxSize = _maxSize;
         dashed = _dashed;
+        mmax2 = _mmax2;
+        System.err.println(mmax2);
+    }
+    
+    public final MMAX2 getMMAX2()
+    {
+    	return mmax2;
     }
     
     public final Color getLineColor()
@@ -139,7 +149,7 @@ public class MarkableRelation implements MarkableRelationAPI
         MarkableSet oldSet = (MarkableSet)individualSets.get(value);
         if (oldSet == null)
         {
-            oldSet = new MarkableSet(value, ordered, lineWidth, lineColor, lineStyle,this);
+            oldSet = new MarkableSet(value, ordered, lineWidth, lineColor, lineStyle, this);
             individualSets.put(new String(value), oldSet);
         }
         // Now, oldSet is guaranteed to be a reference to a valid MarkableSet
@@ -189,8 +199,6 @@ public class MarkableRelation implements MarkableRelationAPI
     public final void createMarkablePointer(Markable sourceMarkable, MarkableLevel sourceMarkableLevel)
     {
         MarkablePointer newMarkablePointer = new MarkablePointer(sourceMarkable,lineWidth,lineColor,lineStyle,maxSize,this,dashed);
-//        System.err.println(sourceMarkableLevel.getMarkableLevelName());
-//        System.err.println(sourceMarkable.getID());
         ArrayList allTargetIDs = MMAX2Utils.parseTargetSpan(sourceMarkable.getAttributeValue(attributeName),";");
         for(int z=0;z<allTargetIDs.size();z++)
         {
@@ -216,10 +224,10 @@ public class MarkableRelation implements MarkableRelationAPI
             }
             else
             {
+            	System.err.println("Markable "+currentID+" was not found");
                 System.out.println(currentID);
                 System.out.println(currentTargetLevelName);
                 System.out.println(currentTargetMarkableLevel);
-            	System.err.println("Markable "+currentID+" was not found");
             }
         }
         individualSets.put(new String(sourceMarkable.getID()),newMarkablePointer);        

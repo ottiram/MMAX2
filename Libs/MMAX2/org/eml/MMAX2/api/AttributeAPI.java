@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Mark-Christoph M�ller
+ * Copyright 2021 Mark-Christoph Müller
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ public interface AttributeAPI
     public static int MARKABLE_SET = 5;
     public static int MARKABLE_POINTER = 6;  
 
+    
     /**  <b><font size=+1 color=green>(API)</font></b>  Returns the {@link MarkableRelationAPI MarkableRelation} object that this MMAX2Attribute is associated with.
      * 
      * @return The {@link MarkableRelationAPI MarkableRelation} object that this MMAX2Attribute is associated with, or null if none.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Mark-Christoph M�ller
+ * Copyright 2021 Mark-Christoph Müller
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,11 @@
 package org.eml.MMAX2.gui.display;
 
 import java.awt.Cursor;
+import java.awt.DisplayMode;
+import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.AdjustmentListener;
@@ -51,17 +55,16 @@ import org.w3c.dom.Document;
 
 public class MMAX2TextPane extends JTextPane implements AdjustmentListener, KeyListener
 {                                
-    private boolean isDraggingGoingOn=false;
-    
+    private boolean isDraggingGoingOn=false;        
     private boolean CONTROL_DOWN=false;
-    private boolean mouseInPane = true;
-    
+    private boolean mouseInPane = true;    
     private Timer refreshControlTimer = null;
+
     // Milliseconds before refreshTimer is stopped after the last scrolling ocurred
-    private int TIME_TO_REFRESH_AFTER_LAST_SCROLLING = 1000;
+    private int TIME_TO_REFRESH_AFTER_LAST_SCROLLING = 5; // was 1000
     private Timer refreshTimer = null;
     // Milliseconds between separate refreshTimer firings
-    private int TIME_BETWEEN_REFRESHES = 10;        
+    private int TIME_BETWEEN_REFRESHES = 10;// was 10
     
     private Timer activateHoveringLatencyTimer = null;
     private int HOVERING_LATENCY_TIME = 100;
@@ -71,9 +74,7 @@ public class MMAX2TextPane extends JTextPane implements AdjustmentListener, KeyL
     private MMAX2MouseMotionListener currentMouseMotionListener = null;
     
     private MMAX2 mmax2 = null;
-
     private MouseEvent currentMouseMoveEvent = null;
-    
     private Markable currentHoveree = null;
     
     private boolean showHandlesOfCurrentFragmentOnly = false;
@@ -85,24 +86,18 @@ public class MMAX2TextPane extends JTextPane implements AdjustmentListener, KeyL
     private JPopupMenu markableSetPeerWindow = null;
 
     public MMAX2TextPane()
-    {
-        super();
-        
-        currentMouseListener = new MMAX2MouseListener();
+    {           	
+    	currentMouseListener = new MMAX2MouseListener();
         addMouseListener(currentMouseListener);     
-
         currentMouseMotionListener = new MMAX2MouseMotionListener();
         this.addMouseMotionListener(currentMouseMotionListener);     
-
         currentCaretListener = new MMAX2CaretListener();
         addCaretListener(currentCaretListener);
         
         setCaret(new MMAX2Caret());
-        // Prevent text modifications
-        setEditable(false);        
-        
-        // Make sure graphics are optimized
+        setEditable(false);                
         setDoubleBuffered(true);
+        
         // Init refreshControlTimer (0 is a placeholder, overridden by TIME_TO_REFRESH_AFTER_LAST_SCROLLING later)
         refreshControlTimer = new Timer(0 , new ActionListener()
         {
@@ -124,6 +119,7 @@ public class MMAX2TextPane extends JTextPane implements AdjustmentListener, KeyL
             {
                 try
                 {
+                	// System.err.println("Timer actionPerformed "+System.currentTimeMillis());                	
                     mmax2.redraw(null);
                 }
                 catch (java.lang.NullPointerException ex)
@@ -149,6 +145,15 @@ public class MMAX2TextPane extends JTextPane implements AdjustmentListener, KeyL
                
     }// end constructor
     
+    
+    public final boolean isHovering()
+    {    	
+    	if (currentCaretListener.getUpdateMode()==MMAX2Constants.MOUSE_HOVERED)
+    		return true;
+    	else {
+    		return false;    		
+    	}
+    }
     
     public final void setIsDraggingGoingOn(boolean status)
     {
@@ -182,33 +187,17 @@ public class MMAX2TextPane extends JTextPane implements AdjustmentListener, KeyL
               
         //BufferedWriter writer = null;
         Writer out = null;
-        try
-        {
-            out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("image.svg"),"UTF-8"));
-        }
-        catch (java.io.IOException ex)
-        {
-            ex.printStackTrace();
-        }
+        try { out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("image.svg"),"UTF-8")); }
+        catch (java.io.IOException ex) { ex.printStackTrace(); }
         
-        try
-        {
-            svgGenerator.stream(out, false);        
-        }
-        catch (org.apache.batik.svggen.SVGGraphics2DIOException ex)        
-        {
-            
-        }         
-        
+        try { svgGenerator.stream(out, false);}
+        catch (org.apache.batik.svggen.SVGGraphics2DIOException ex) { }                 
         try
         {
             out.flush();
             out.close();
         }
-        catch (java.io.IOException ex)
-        {
-            
-        }       
+        catch (java.io.IOException ex) { }       
         return true;
     }
     
@@ -216,20 +205,7 @@ public class MMAX2TextPane extends JTextPane implements AdjustmentListener, KeyL
     {
         mouseInPane = in;
     }
-    
-    protected void finalize()
-    {
-//        System.err.println("TextPane is being finalized!");        
-        try
-        {
-            super.finalize();
-        }
-        catch (java.lang.Throwable ex)
-        {
-            ex.printStackTrace();
-        }        
-    }
-            
+                
     protected final MMAX2CaretListener getCurrentCaretListener()
     {
         return currentCaretListener;
@@ -251,6 +227,8 @@ public class MMAX2TextPane extends JTextPane implements AdjustmentListener, KeyL
         currentCaretListener.setMMAX2(_mmax2);
         currentMouseListener.setMMAX2(_mmax2);
         currentMouseMotionListener.setMMAX2(_mmax2);
+        
+    	setFont(new Font(mmax2.currentDisplayFontName, Font.PLAIN, mmax2.currentDisplayFontSize));
     }
 
     public final void deactivateFloatingAttributeWindow()
@@ -325,30 +303,25 @@ public class MMAX2TextPane extends JTextPane implements AdjustmentListener, KeyL
             {
                 // There was some hovering going on, so reset first, but do not force it
                 deactivateMarkableHandleHighlight(false);
-                deactivateMarkableSetPeerWindow();
+//                deactivateMarkableSetPeerWindow();
                 // Then set currentHoveree to null. This indicates that no hovering is currently going on
                 currentHoveree = null;
             }
-            deactivateMarkableSetPeerWindow();                           
+//            deactivateMarkableSetPeerWindow();                           
         }
         else
         {
             // The method was called with a valid hoveree markable
             currentHoveree = _hoveree;
-            if (currentHoveree.isDiscontinuous())
-            {
-                mmax2.setStatusBar("Press 'i' to inspect attributes, 'f' to highlight current fragment only"); 
-            }
-            else
-            {
-                mmax2.setStatusBar("Press 'i' to inspect attributes");
-            }
+            if (currentHoveree.isDiscontinuous()) 	{ mmax2.setStatusBar("Press 'i' to inspect attributes, 'f' to highlight current fragment only");  }
+            else 									{ mmax2.setStatusBar("Press 'i' to inspect attributes"); }
+            // This will obey the suppress... setting 
             activateMarkableHandleHighlight();
-            if (mmax2.getRenderingListSize() != 0)
-            {
-                activateMarkableSetPeerWindow();
-            }
-            activateFloatingAttributeWindow();            
+//            if (mmax2.getRenderingListSize() != 0)
+//            {
+//                activateMarkableSetPeerWindow();
+//            }
+//            activateFloatingAttributeWindow();            
         }        
     }
 
@@ -391,6 +364,7 @@ public class MMAX2TextPane extends JTextPane implements AdjustmentListener, KeyL
     {
         if (mmax2.getHighlightMatchingHandles() && mouseInPane && (mmax2.getIsRendering()==false || mmax2.getSuppressHandlesWhenRendering()==false))
         {
+//        	System.err.println("activating");
             if (showHandlesOfCurrentFragmentOnly)
             {
                 currentHoveree.renderMe(MMAX2Constants.RENDER_CURRENT_HANDLE);
@@ -406,6 +380,7 @@ public class MMAX2TextPane extends JTextPane implements AdjustmentListener, KeyL
     {
         if (mmax2.getHighlightMatchingHandles() && (mmax2.getIsRendering()==false || force || mmax2.getSuppressHandlesWhenRendering()==false))
         {
+//        	System.err.println("deactivating");
             if (currentHoveree!=null)
             {
                 currentHoveree.renderMe(MMAX2Constants.RENDER_NO_HANDLES);
@@ -418,7 +393,8 @@ public class MMAX2TextPane extends JTextPane implements AdjustmentListener, KeyL
     /** This method is triggered automatically by activateHoveringLatencyTimer. */
     private final void startHovering()
     {
-        /** Set CaretListener in hoovering mode */
+//    	System.err.println("Hovering");
+        /** Set CaretListener in hovering mode */
         currentCaretListener.setUpdateMode(MMAX2Constants.MOUSE_HOVERED);
         /** Create positionCaretEvent using the last stored Mouse Event. */
         ((MMAX2Caret)this.getCaret()).positionCaret(currentMouseMoveEvent);
@@ -445,23 +421,12 @@ public class MMAX2TextPane extends JTextPane implements AdjustmentListener, KeyL
         adjustmentValueChanged event on */
     public final void startAutoRefresh()
     {
-        if (refreshTimer.isRunning()) 
-        {
-            refreshTimer.restart();
-        }
-        else
-        {
-            refreshTimer.start();            
-        }
-            
-        if (refreshControlTimer.isRunning()) 
-        {
-            refreshControlTimer.restart();
-        }
-        else
-        {
-            refreshControlTimer.start();            
-        }                        
+//    	System.err.println("startAutoRefresh");
+
+    	if (refreshTimer.isRunning())  	{ refreshTimer.restart(); } 
+        else 							{ refreshTimer.start();}           
+        if (refreshControlTimer.isRunning())  	{ refreshControlTimer.restart(); }
+        else 									{ refreshControlTimer.start(); }                        
     }
         
     public final void stopAutoRefresh()
@@ -473,14 +438,15 @@ public class MMAX2TextPane extends JTextPane implements AdjustmentListener, KeyL
     // Overridden to implement custom painting
     public final void paintComponent(Graphics gr)
     {
-        try
-        {
-            mmax2.redraw(null);            
-        }
-        catch (java.lang.NullPointerException ex)
-        {
-            //
-        }
+//    	System.err.println("painting");
+//        try
+//        {
+//            mmax2.redraw(null);            
+//        }
+//        catch (java.lang.NullPointerException ex)
+//        {
+//            //
+//        }
         
         
         try
@@ -496,14 +462,14 @@ public class MMAX2TextPane extends JTextPane implements AdjustmentListener, KeyL
 
         }
         
-        try
-        {
-            mmax2.redraw(null);            
-        }
-        catch (java.lang.NullPointerException ex)
-        {
-            //
-        }
+//        try
+//        {
+//            mmax2.redraw(null);            
+//        }
+//        catch (java.lang.NullPointerException ex)
+//        {
+//            //
+//        }
     }                        
                        
     public final MMAX2MouseMotionListener getCurrentMouseMotionListener()
@@ -566,51 +532,43 @@ public class MMAX2TextPane extends JTextPane implements AdjustmentListener, KeyL
         }
     }
     
-    
-    public void keyPressed(KeyEvent e)
-    {
-    	if (e.getModifiers() == KeyEvent.CTRL_MASK)
-    	{
-        	System.err.println("Control down");
-            setControlIsPressed(true);
-            if (e.getKeyCode() == KeyEvent.VK_X)
-            {
-            	mmax2.requestExit();
-            }
-            
-    	}
-    }
-    
-    
-    public void keyPressed_bak(KeyEvent e) 
+        
+    public void keyPressed(KeyEvent e) 
     {    	    	
         int code = e.getKeyCode();       
         if (code == KeyEvent.VK_CONTROL)
         {        	        	
-        	System.err.println("Control");
+        	System.err.println("Control down");
             setControlIsPressed(true);                        
-        }     
+        }
+    	if (e.getModifiersEx() == KeyEvent.CTRL_DOWN_MASK)
+    	{
+            if (e.getKeyCode() == KeyEvent.VK_X)
+            {
+            	mmax2.requestExit();
+            }
+            else if (e.getKeyCode() == KeyEvent.VK_S)
+            {
+            	setControlIsPressed(false);
+            	mmax2.requestSaveAll();            	
+            }
+            else if (e.getKeyCode() == KeyEvent.VK_L)
+            {
+            	setControlIsPressed(false);
+            	mmax2.requestLoadFile();
+            }           
+    	}        
     }    
     
-    public void keyReleased_bak(KeyEvent e) 
+    public void keyReleased(KeyEvent e) 
     {
         int code = e.getKeyCode();       
         if (code == KeyEvent.VK_CONTROL)
-        {
-            setControlIsPressed(false);
-        }                        
-    }
-
-    public void keyReleased(KeyEvent e) 
-    {
-        //if (e.getModifiers() == KeyEvent.CTRL_MASK)
-    	if (CONTROL_DOWN)
         {
         	System.err.println("Control up");
             setControlIsPressed(false);
         }                        
     }
-    
     
     public void keyTyped(KeyEvent e) 
     {

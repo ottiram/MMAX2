@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Mark-Christoph Müller
+ * Copyright 2021 Mark-Christoph MÃ¼ller
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,11 @@ package org.eml.MMAX2.annotation.markables;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.Point;
+import java.awt.RenderingHints;
+import java.awt.geom.Point2D;
 import java.awt.geom.QuadCurve2D;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -34,44 +37,41 @@ public class MarkableSet implements Renderable, MarkableSetAPI
     private MarkableRelation markableRelation;
     /** Name of the attribute value all Markables in this MarkableSet share (e.g. 'set_4'). */
     private String attributeValue;
+
     /** Whether this set is ordered or unordered. */
     private boolean ordered;
+    
     /** Used only if this.ordered. */
-    private HashSet unorderedSet;
+    private HashSet<Markable> unorderedSet;
     /** Used only if !this.ordered. */
-    private ArrayList orderedSet;
+    private ArrayList<Markable> orderedSet;
+
     /** Number of Markables in this set, either ordered or unordered. */
     private int size;
     /** Width of the line drawn when rendering this set. */
     private int lineWidth;
         
     /** TODO: Support MAXSIZE */
-        
+    // For 'classic' rendering
     int[] X_points=null;
     int[] Y_points=null;
     
+    Point[][] rects=null;
+    
     private int leftMostPosition = Integer.MAX_VALUE;
     private int rightMostPosition = -1;            
-    private boolean opaque = false;
-    
+    private boolean ambient = false;    // an ambient set is one that is rendered as a potential merge / adopt candidate 
     private boolean permanent = false;
     
     /** Creates a new MarkableSet for attributeValue _attributeValue (e.g. set_4), with ordering set to _ordered. */
     public MarkableSet(String _attributeValue, boolean _ordered, int _lineWidth, Color _color, int _lineStyle, MarkableRelation relation)
     {
-        // Set attributeValue
         attributeValue = _attributeValue;
-        // Set ordered status
         ordered = _ordered;
         // Init appropriate list 
-        if (ordered) 
-        {            
-            orderedSet = new ArrayList();
-        }
-        else
-        {
-            unorderedSet = new HashSet();
-        }
+        if (ordered)  { orderedSet = new ArrayList<Markable>(); }
+        else          { unorderedSet = new HashSet<Markable>(); }
+
         /** Set rendering attributes. */
         lineWidth = _lineWidth;
         markableRelation = relation;
@@ -87,14 +87,14 @@ public class MarkableSet implements Renderable, MarkableSetAPI
         return permanent;
     }
         
-    public final void setOpaque(boolean status)
+    public final void setAmbient(boolean status)
     {
-        this.opaque = status;
+        this.ambient = status;
     }
     
-    public final boolean isOpaque()
+    public final boolean isAmbient()
     {
-        return opaque;
+        return ambient;
     }
     
     /** Returns the value of the MARKABLE_SET-type MarkableRelation that this set belongs to, e.g. 'set_4'.*/
@@ -114,9 +114,6 @@ public class MarkableSet implements Renderable, MarkableSetAPI
             orderedSet.remove(_markable);
         }
         size--;
-        // Update line points WITH recalculation of extent (cause sth, has been removed)
-        // Should only be necessary if the first or last was removed ?!?
-        updateLinePoints(true);
     }
     
     /** Adds a Markable to this MarkableSet. If this.ordered, the Markable will be inserted at the correct (document order) 
@@ -189,48 +186,108 @@ public class MarkableSet implements Renderable, MarkableSetAPI
     /** This method updates the cached XY-coordinates of the top left corners of each Markable in this MarkableSet. The method is called
         after display changes. */
     public final void updateLinePoints(boolean recalcExtent)
-    {
+    {    	    	
         Point currentPoint=null;
-        
         X_points = new int[size];
         Y_points = new int[size];
+
+        // Store four ints for each elem in size
+        rects = new Point[size][4];
         
-        if (recalcExtent)
+        if (recalcExtent) 
         {
-            Markable currentMarkable = null;
             leftMostPosition = Integer.MAX_VALUE;
-            rightMostPosition = -1;
-            // Iterate over all Markables in this set
-            for (int z=0;z<size;z++)
-            {
-                currentMarkable = ((Markable)orderedSet.get(z));
-                // Get and store points of line
-                currentPoint = currentMarkable.getPoint();
-                X_points[z] = (int)currentPoint.getX();
-                Y_points[z] = (int)currentPoint.getY();            
-                
-                if (currentMarkable.getLeftmostDisplayPosition() < this.leftMostPosition)
-                {
-                    this.leftMostPosition = currentMarkable.getLeftmostDisplayPosition();
-                }
-                if (currentMarkable.getRightmostDisplayPosition() > this.rightMostPosition)
-                {
-                    this.rightMostPosition = currentMarkable.getRightmostDisplayPosition();
-                }
-            }                                
+            rightMostPosition = -1;        
         }
-        else
+        Markable currentMarkable = null;
+        // Iterate over all Markables in this set
+        for (int z=0;z<size;z++)
         {
-            // Iterate over all Markables in this set
-            for (int z=0;z<size;z++)
+            currentMarkable = ((Markable)orderedSet.get(z));
+            // Get and store points of line
+            currentPoint = currentMarkable.getPoint();
+            X_points[z] = (int)currentPoint.getX();
+            Y_points[z] = (int)currentPoint.getY();            
+
+            rects[z] = currentMarkable.getRectangle();
+            
+            if (recalcExtent)
             {
-                // Get and store points of line
-                currentPoint = ((Markable)orderedSet.get(z)).getPoint();
-                X_points[z] = (int)currentPoint.getX();
-                Y_points[z] = (int)currentPoint.getY();            
-            }                    
-        }        
-    }
+	            if (currentMarkable.getLeftmostDisplayPosition() < this.leftMostPosition)
+	            {
+	                this.leftMostPosition = currentMarkable.getLeftmostDisplayPosition();
+	            }
+	            if (currentMarkable.getRightmostDisplayPosition() > this.rightMostPosition)
+	            {
+	                this.rightMostPosition = currentMarkable.getRightmostDisplayPosition();
+	            }
+            }
+            
+        }
+    }    
+
+//    /** This method updates the cached XY-coordinates of the top left corners of each Markable in this MarkableSet. The method is called
+//    after display changes. */
+//public final void updateLinePoints_bak(boolean recalcExtent)
+//{
+//    Point currentPoint=null;
+//    Point[] currentRectangle=null;
+//    
+//    top_left_points=new Point[size];
+//    top_right_points=new Point[size];
+//    bottom_left_points=new Point[size];    		
+//    bottom_right_points=new Point[size];
+//    
+//    X_points = new int[size];
+//    Y_points = new int[size];
+//    
+//    if (recalcExtent)
+//    {
+//        Markable currentMarkable = null;
+//        leftMostPosition = Integer.MAX_VALUE;
+//        rightMostPosition = -1;
+//        // Iterate over all Markables in this set
+//        for (int z=0;z<size;z++)
+//        {
+//            currentMarkable = ((Markable)orderedSet.get(z));
+//            // Get and store points of line
+//            currentPoint = currentMarkable.getPoint();
+//            X_points[z] = (int)currentPoint.getX();
+//            Y_points[z] = (int)currentPoint.getY();            
+//            
+//            if (currentMarkable.getLeftmostDisplayPosition() < this.leftMostPosition)
+//            {
+//                this.leftMostPosition = currentMarkable.getLeftmostDisplayPosition();
+//            }
+//            if (currentMarkable.getRightmostDisplayPosition() > this.rightMostPosition)
+//            {
+//                this.rightMostPosition = currentMarkable.getRightmostDisplayPosition();
+//            }
+//            
+//            currentRectangle=currentMarkable.getRectangle();
+//            top_left_points[z]=currentRectangle[0];
+//            top_right_points[z]=currentRectangle[1];
+//            bottom_right_points[z]=currentRectangle[2];
+//            bottom_left_points[z]=currentRectangle[3];
+////            System.err.println(top_left_points[z]);
+////            System.err.println(top_right_points[z]);
+////            System.err.println(bottom_right_points[z]);
+////            System.err.println(bottom_left_points[z]);
+//        }                                
+//    }
+//    else
+//    {
+//        // Iterate over all Markables in this set
+//        for (int z=0;z<size;z++)
+//        {
+//            // Get and store points of line
+//            currentPoint = ((Markable)orderedSet.get(z)).getPoint();
+//            X_points[z] = (int)currentPoint.getX();
+//            Y_points[z] = (int)currentPoint.getY();            
+//        }                    
+//    }        
+//}    
+    
     
     /** This method is called ONCE when this set is to be rendered initially. It renders both the individual set member Markables
         and the lines between them (if any.) It is also called after deletion of set members occurred. */
@@ -268,12 +325,8 @@ public class MarkableSet implements Renderable, MarkableSetAPI
         (if any.) */
     public final void refresh(Graphics2D graphics)
     {            
-        if (X_points == null)
-        {
-            updateLinePoints(false);
-        }
-       
-        // Right now, only ordered sets can be rendered
+        if (X_points == null) { updateLinePoints(false); }
+        // Currently, only ordered sets can be rendered        
         if (size > 1)
         {   
             // Re-render entire line
@@ -303,33 +356,65 @@ public class MarkableSet implements Renderable, MarkableSetAPI
         X_points = null;
         Y_points = null;        
         doc.commitChanges();
-        opaque = false;
+        ambient = false;
     }
         
     public final void drawSet(Graphics2D graphics)
     {
-        // Set drawing properties
-        //graphics.setColor(this.lineColor);                                
-        graphics.setColor(markableRelation.getLineColor());
-        if (!opaque)
-        {
-            graphics.setStroke(new BasicStroke(this.lineWidth));
-        }
+    	Color co = markableRelation.getLineColor();
+	    graphics.setColor(co);
+        if (!ambient) { graphics.setStroke(new BasicStroke(this.lineWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER, 1)); }
         else
         {
             float[] dash = new float[2];
             dash[0] =10;
             dash[1] =10;
-            graphics.setStroke(new BasicStroke(this.lineWidth-1, BasicStroke.CAP_SQUARE,BasicStroke.JOIN_MITER,10,dash,0));
+            graphics.setStroke(new BasicStroke(this.lineWidth-1, BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER, 10, dash, 0));
         }
         
+        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         QuadCurve2D.Double c = null;
         Point ctrlPoint = null;
         int x1,y1,x2,y2 = 0;        
         int tempStyle = markableRelation.getLineStyle();
         if (tempStyle==MMAX2Constants.STRAIGHT)
         {
-            graphics.drawPolyline(X_points,Y_points,size);
+        	boolean classic=false;
+        	if (classic)
+        	{
+        		graphics.drawPolyline(X_points,Y_points,size);
+        	}
+        	else
+        	{
+                for (int z=0;z<size-1;z++)
+                {
+            		double dist, mindist=100000;
+            		int minx1=0;  
+            		int miny1=0;
+            		int minx2=0;
+            		int miny2 =0;
+                	Point[]r1=rects[z];
+                	Point[]r2=rects[z+1];
+                	for (int rx1=0;rx1<4;rx1++)
+                	{
+                		for (int rx2=0;rx2<4;rx2++)
+                		{
+                			dist=Point2D.distance(r1[rx1].getX(), r1[rx1].getY(), r2[rx2].getX(), r2[rx2].getY());
+                			if (dist<mindist)
+                			{
+                				mindist=dist;
+                				minx1=(int)r1[rx1].getX();
+                				miny1=(int)r1[rx1].getY();
+                				minx2=(int)r2[rx2].getX();
+                				miny2=(int)r2[rx2].getY();                				
+                			}
+                		}
+                	}		
+            		// shortest link between x1 and x2 has been found
+            		graphics.drawLine(minx1, miny1, minx2, miny2);
+                }
+        		
+        	}
         }
         else if (tempStyle==MMAX2Constants.LCURVE || tempStyle==MMAX2Constants.RCURVE || tempStyle==MMAX2Constants.XCURVE)            
         {
@@ -446,7 +531,7 @@ public class MarkableSet implements Renderable, MarkableSetAPI
         
     public final Markable[] getOrderedMarkables()
     {
-        ArrayList temp = new ArrayList(orderedSet);
+        ArrayList<Markable> temp = new ArrayList<Markable>(orderedSet);
         return (Markable[]) temp.toArray(new Markable[0]);   
     }
     

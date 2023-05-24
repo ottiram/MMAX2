@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Mark-Christoph M�ller
+ * Copyright 2021 Mark-Christoph Müller
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -76,7 +75,7 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
     /** Reference to the discourse this MarkableLayer belongs to. */
     private MMAX2Discourse currentDiscourse;    
     /** HashMap mapping all Markables in this layer to their IDs. */
-    private HashMap markableHash;    
+    private HashMap<String, Markable> markableHash;    
     /** Name of the markable xml file pertaining to this layer. */
     private String markableFileName="";    
     /** Name of the markable level (read from 'level' attribute). */
@@ -89,13 +88,13 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
         Filled by this.registerMarkableAtDiscourseElement, used by getMarkablesAtDiscourseElement. */
     private String markableNameSpace="";
     private String dtdReference="<!DOCTYPE markables>";
-    private HashMap markablesAtDiscourseElement;
+    private HashMap<String, Markable[]> markablesAtDiscourseElement;
     /** HashMap which maps DE id string to arrays of markables started by the DE. 
         Filled by this.registerMarkableAtDiscourseElement, used by getMarkablesStartedByDiscourseElement. */
-    private HashMap startedMarkablesAtDiscourseElement;
+    private HashMap<String, Markable[]> startedMarkablesAtDiscourseElement;
     /** HashMap which maps DE id string to arrays of markables ended by the DE. 
         Filled by this.registerMarkableAtDiscourseElement, used by getMarkablesEndedByDiscourseElement. */
-    private HashMap endedMarkablesAtDiscourseElement;    
+    private HashMap<String, Markable[]> endedMarkablesAtDiscourseElement;    
     /** Array containing at index X an array of those Markables associated with the DE with discourse position x.
         Filled by this.createDisplayPositionToMarkableMapping, used by this.getMarkableAtDiscoursePosition. */
     private Markable[][] markablesAtDiscoursePosition;    
@@ -105,15 +104,14 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
     private boolean visible;
     /** Current position (0 to len -1) of this MarkableLayer in current ordering in MarkableChart. */
     private int position;
-    private JComboBox activatorComboBox = null;
+    private JComboBox<String> activatorComboBox = null;
     /** Arrow for moving this layer up in the hierarchy, appearing in MarkableLayerControlPanel. */
     private BasicArrowButton moveUp = null;
     /** Arrow for moving this layer down in the hierarchy, appearing in MarkableLayerControlPanel. */    
     private BasicArrowButton moveDown = null;
     
-    private HashMap MarkableSetRelations = null;
-    
-    private HashMap MarkablePointerRelations = null;
+    private HashMap<String, MarkableRelation> markableSetRelations = null;    
+    private HashMap<String, MarkableRelation> markablePointerRelations = null;
     
     private JButton updateCustomization = null;
     private JButton validateButton = null;
@@ -138,37 +136,38 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
     
     private boolean readOnly = false;
     
+    boolean VERBOSE = false;
+    boolean DEBUG = false;
+    boolean PURGE_SINGLETON_SETS = true; 
+    
     /** Creates new MarkableLevel */
     public MarkableLevel(DocumentImpl _markableDOM, String _markableFileName, String _markableLevelName, MMAX2AnnotationScheme _scheme, String _customizationFileName)
     {                        
-    	boolean verbose = true;
-    	
-    	String verboseVar = System.getProperty("verbose");
-    	if (verboseVar != null && verboseVar.equalsIgnoreCase("false"))
-    	{
-    		verbose = false;
-    	}
-    	
+    	try { if (System.getProperty("verbose").equalsIgnoreCase("true")) {VERBOSE = true;} }
+    	catch (java.lang.NullPointerException x) { }
+
+    	try { if (System.getProperty("debug").equalsIgnoreCase("true")) {DEBUG = true;} }
+    	catch (java.lang.NullPointerException x) { }
+
+    	try { if (System.getProperty("purge_singleton_sets").equalsIgnoreCase("false")) {PURGE_SINGLETON_SETS = false;} }
+    	catch (java.lang.NullPointerException x) { }
+    	    	
         customizationFileName=_customizationFileName;
+        // ??
         matchableLevelName=","+_markableLevelName.toLowerCase()+",";        
          
         if (_markableDOM != null)
         {            
-            // Start encding-handling
-            encoding = _markableDOM.getEncoding();
-            if (encoding == null)
-            {
-                encoding = "UTF-8";
-            }
-            if (encoding.equals("")==false)
-            {
-                markableFileHeader="<?xml version=\"1.0\" encoding=\""+encoding+"\"?>";
-            }            
-            if (verbose) System.err.println("File header: "+markableFileHeader);
-            // end encoding-handling
+            //encoding = _markableDOM.getInputEncoding();
+            //if (encoding == null)			 { encoding = "UTF-8"; }
+        	if (_markableDOM.getInputEncoding() != null)
+        	{
+        		encoding = _markableDOM.getInputEncoding();
+        	}
+            if (encoding.equals("")==false)	 { markableFileHeader="<?xml version=\"1.0\" encoding=\""+encoding+"\"?>"; }            
+            if (isDebug()) System.err.println("    Markable file header: "+markableFileHeader);
             
-            markableDOM = _markableDOM;        
-            
+            markableDOM = _markableDOM;                   
             // Check for name space availability
             try
             {
@@ -180,20 +179,15 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
             }
             catch (java.lang.NullPointerException ex)
             {
-                JOptionPane.showMessageDialog(null,"Cannot access xmlns element in file "+_markableLevelName+"!\nProbably missing markables.dtd.","Cannot access name space!",JOptionPane.ERROR_MESSAGE);
+            	String h = "Cannot access xmlns element in file "+_markableLevelName+"!\nProbably missing markables.dtd.";
+            	System.err.println(h);
+                JOptionPane.showMessageDialog(null,h,"Cannot access name space!",JOptionPane.ERROR_MESSAGE);
             }
 
             // Try to set name space
-            try
-            {
-                markableNameSpace = markableDOM.getElementsByTagName("markables").item(0).getAttributes().getNamedItem("xmlns").getNodeValue();
-            }
-            catch (java.lang.NullPointerException ex)
-            {
-                
-            }
-                
-            
+            try										 	{ markableNameSpace = markableDOM.getElementsByTagName("markables").item(0).getAttributes().getNamedItem("xmlns").getNodeValue(); }
+            catch (java.lang.NullPointerException ex) 	{ }
+                            
             // New March 30, 2005: Check if doctype is available at all            
             if (markableDOM.getDoctype() == null)
             {
@@ -201,60 +195,42 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
             }
             else
             {            
-                if (markableDOM.getDoctype().getPublicId() != null)
-                {
-                    dtdReference = "<!DOCTYPE markables PUBLIC \""+markableDOM.getDoctype().getPublicId()+"\">";
-                }
-                else if (markableDOM.getDoctype().getSystemId() != null)
-                {
-                    dtdReference = "<!DOCTYPE markables SYSTEM \""+markableDOM.getDoctype().getSystemId()+"\">";
-                }
+                if (markableDOM.getDoctype().getPublicId() != null) 		{ dtdReference = "<!DOCTYPE markables PUBLIC \""+markableDOM.getDoctype().getPublicId()+"\">"; }
+                else if (markableDOM.getDoctype().getSystemId() != null) 	{ dtdReference = "<!DOCTYPE markables SYSTEM \""+markableDOM.getDoctype().getSystemId()+"\">"; }
             }
         }
         
         markableFileName = _markableFileName;
         markableLevelName = _markableLevelName;
         annotationscheme = _scheme;
-        markablesAtDiscourseElement = new HashMap();
-        startedMarkablesAtDiscourseElement = new HashMap();
-        endedMarkablesAtDiscourseElement = new HashMap();                   
-
-        MarkableSetRelations = new HashMap();
-        MarkablePointerRelations = new HashMap();        
+        markablesAtDiscourseElement = new HashMap<String, Markable[]>();
+        startedMarkablesAtDiscourseElement = new HashMap<String, Markable[]>();
+        endedMarkablesAtDiscourseElement = new HashMap<String, Markable[]>();                   
+        markableSetRelations = new HashMap<String, MarkableRelation>();
+        markablePointerRelations = new HashMap<String, MarkableRelation>();        
         
-        if (_markableLevelName.equalsIgnoreCase("internal_basedata_representation"))
-        {
-            return;
+        if (_markableLevelName.equalsIgnoreCase("internal_basedata_representation")) 
+        { 
+        	System.err.println("Level for internal_basedata_representation!");
+        	return; 
         }
         
-        renderer = new MarkableLevelRenderer(this, customizationFileName);        
+        renderer = new MarkableLevelRenderer(this, customizationFileName);
         
         // Init GUI elements
         moveUp = new BasicArrowButton(SwingConstants.NORTH);
-        if (isDefined()==false)
-        {
-            moveUp.setEnabled(false);
-        }
+        if (isDefined()==false) { moveUp.setEnabled(false); }
         moveUp.addActionListener(this);
         moveUp.setToolTipText("Move this level up in hierarchy");
         moveDown = new BasicArrowButton(SwingConstants.SOUTH);
-        if (isDefined()==false)
-        {
-            moveDown.setEnabled(false);
-        }        
+        if (isDefined()==false) { moveDown.setEnabled(false); }        
         moveDown.addActionListener(this);           
         moveDown.setToolTipText("Move this level down in hierarchy");
         
-        //activatorCheckBox = new JCheckBox();
-        activatorComboBox = new JComboBox();
+        activatorComboBox = new JComboBox<String>();
         activatorComboBox.setFont(activatorComboBox.getFont().deriveFont((float)10));
-        activatorComboBox.setBorder(new EmptyBorder(0,0,1,1));
-        
-        if (isDefined()==false)
-        {
-            activatorComboBox.setEnabled(false);
-        }
-        
+        activatorComboBox.setBorder(new EmptyBorder(0,0,1,1));        
+        if (isDefined()==false) { activatorComboBox.setEnabled(false); }        
         activatorComboBox.setToolTipText("Activate/hide/deactivate this level");
         activatorComboBox.setActionCommand("activator");
         // Each MarkableLayer is active by default;
@@ -267,56 +243,34 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
         
         nameLabel = new JLabel(markableLevelName);
         nameLabel.setOpaque(true);
-        if (renderer.getForegroundIsTransparent()==false)
-        {
-            // Set foregroundcolor only if it is not transparent, otherwise black will be used
-            nameLabel.setForeground(renderer.getForegroundColor());
-        }
-        else
-        {
-            nameLabel.setForeground(Color.black);
-        }
+        // Set foregroundcolor only if it is not transparent, otherwise black will be used
+        if (renderer.getForegroundIsTransparent()==false) 	{ nameLabel.setForeground(renderer.getForegroundColor()); }
+        else 												{ nameLabel.setForeground(Color.black); }
         
-        if (renderer.getBackgroundIsTransparent())
-        {
-            // If the background is transparent, set label background to white, which is transparent
-            nameLabel.setBackground(Color.white);           
-        }
-        else
-        {
-            nameLabel.setBackground(renderer.getBackgroundColor());
-        }        
+        // If the background is transparent, set label background to white, which is transparent
+        if (renderer.getBackgroundIsTransparent()) 	{ nameLabel.setBackground(Color.white);}
+        else 										{ nameLabel.setBackground(renderer.getBackgroundColor()); }        
         
         updateCustomization = new JButton("Update");
         updateCustomization.setFont(updateCustomization.getFont().deriveFont((float)10));
-        updateCustomization.setBorder(new EmptyBorder(0,0,1,1));
-
-        
+        updateCustomization.setBorder(new EmptyBorder(0,0,1,1));        
         updateCustomization.setActionCommand("update");
         updateCustomization.addActionListener(this);        
         if (customizationFileName.equals(""))
-        {
-            updateCustomization.setEnabled(false);
-        }
+        { updateCustomization.setEnabled(false); }
         else
         {   
             updateCustomization.setEnabled(true);
             updateCustomization.setToolTipText(customizationFileName);
         }
         
-        if (isDefined()==false)
-        {
-            updateCustomization.setEnabled(false);
-        }
+        if (isDefined()==false) { updateCustomization.setEnabled(false); }
                 
         validateButton = new JButton("Validate");
         validateButton.setFont(validateButton.getFont().deriveFont((float)10));
         validateButton.setBorder(new EmptyBorder(0,0,1,1));
         
-        if (isDefined()==false)
-        {
-            validateButton.setEnabled(false);
-        }
+        if (isDefined()==false) { validateButton.setEnabled(false); }
         
         validateButton.setActionCommand("validate");
         validateButton.addActionListener(this);
@@ -325,28 +279,17 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
         deleteAllButton.setFont(deleteAllButton.getFont().deriveFont((float)10));
         deleteAllButton.setBorder(new EmptyBorder(0,0,1,1));
         
-        if (isDefined()==false)
-        {
-            deleteAllButton.setEnabled(false);
-        }
-        
+        if (isDefined()==false) { deleteAllButton.setEnabled(false); }        
         deleteAllButton.setActionCommand("delete_all");
-        deleteAllButton.addActionListener(this);
-        
+        deleteAllButton.addActionListener(this);        
         
         switchCustomizations = new JCheckBox("");
-        if (isDefined()==false)
-        {
-            switchCustomizations.setEnabled(false);
-        }
-
+        if (isDefined()==false) { switchCustomizations.setEnabled(false); }
         switchCustomizations.setActionCommand("switch");
         switchCustomizations.addActionListener(this);
         switchCustomizations.setToolTipText("Activate / deactivate markable customization for this level");
         if (customizationFileName.equals(""))
-        {
-            switchCustomizations.setEnabled(false);
-        }
+        { switchCustomizations.setEnabled(false); }
         else
         {
             switchCustomizations.setSelected(true);
@@ -357,9 +300,19 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
         saveMenuItem.setFont(MMAX2.getStandardFont());
         saveMenuItem.addActionListener(this);
         saveMenuItem.setActionCommand("save_this_level");
-        saveMenuItem.setEnabled(false);               
-        
+        saveMenuItem.setEnabled(false);                      
     }
+    
+    public boolean isVerbose()
+    {
+    	return VERBOSE;
+    }
+
+    public boolean isDebug()
+    {
+    	return DEBUG;
+    }
+    
     
 /*    
     public HashSet getAllUIMATypeMappings()
@@ -401,7 +354,6 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
     {
         String temp = annotationscheme.getSchemeFileName();
         annotationscheme=null;
-        System.gc();
         annotationscheme = new MMAX2AnnotationScheme(temp);
         annotationscheme.setMMAX2(mmax2);
         return annotationscheme;        
@@ -432,13 +384,7 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
     {        
         return (endedMarkablesAtDiscourseElement.get(deID)!=null);
     }
-    /*
-    public final boolean hasMarkableAtSpan(String span)
-    {
-        System.err.println("Error: hasMarkableAtSpan is deprecated!");
-        return false;        
-    }
-    */
+
     public final Markable getMarkableAtSpan(String span)
     {
         Markable result = null;
@@ -461,11 +407,8 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
         if (dirty != status)
         {
             dirty = status;        
-            System.err.println("MarkableLevel "+markableLevelName+" set to dirty="+status);
-            if (currentDiscourse.getHasGUI())
-            {
-                saveMenuItem.setEnabled(status);
-            }
+            if (isVerbose()) System.err.println("MarkableLevel "+markableLevelName+" set to dirty="+status);
+            if (currentDiscourse.getHasGUI()) { saveMenuItem.setEnabled(status); }
         }
         else
         {
@@ -482,7 +425,7 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
         
         if (currentDiscourse.getHasGUI())
         {
-            ArrayList activeBrowsers = null;
+            ArrayList<?> activeBrowsers = null;
             if (refresh)
             {
                 // New: check for and update currently active markable browsers
@@ -533,7 +476,7 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
     
     public final void validate()
     {
-        System.err.println("Validating "+markableHash.size() +" markables from MarkableLevel "+getMarkableLevelName());
+        if (isVerbose()) System.err.println("Validating "+markableHash.size() +" markables from MarkableLevel "+getMarkableLevelName());
         Iterator allMarkables = markableHash.values().iterator();
         Markable current = null;
         // Hide attribute window during validation
@@ -633,7 +576,7 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
         root.insertBefore((Node)node,root.getFirstChild());
         for (int i=0;i<mmaxAttributes.length;i++)
         {
-            String currentAttrib = ((MMAX2Attribute)mmaxAttributes[i]).getLowerCasedAttributeName();
+            String currentAttrib = ((MMAX2Attribute)mmaxAttributes[i]).getDisplayName();
             if (attributes.containsKey(currentAttrib)==false)
             {
                 attributes.put(new String(currentAttrib),new String(((MMAX2Attribute)mmaxAttributes[i]).getSelectedValue()));
@@ -693,8 +636,8 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
         root.insertBefore((Node)node,root.getFirstChild());
         for (int i=0;i<mmaxAttributes.length;i++)
         {
-            attributes.put(new String(((MMAX2Attribute)mmaxAttributes[i]).getLowerCasedAttributeName()),new String(((MMAX2Attribute)mmaxAttributes[i]).getSelectedValue()));
-            ((Element)node).setAttribute(new String(((MMAX2Attribute)mmaxAttributes[i]).getLowerCasedAttributeName()),new String(((MMAX2Attribute)mmaxAttributes[i]).getSelectedValue()));
+            attributes.put(new String(((MMAX2Attribute)mmaxAttributes[i]).getDisplayName()),new String(((MMAX2Attribute)mmaxAttributes[i]).getSelectedValue()));
+            ((Element)node).setAttribute(new String(((MMAX2Attribute)mmaxAttributes[i]).getDisplayName()),new String(((MMAX2Attribute)mmaxAttributes[i]).getSelectedValue()));
         }
         ((Element)node).setAttribute(new String("id"),new String(id));
         // Create new markable object from above parameters
@@ -735,29 +678,20 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
         if (getIsDirty()==false)
         {
         	if (autoSaveMode) System.err.print("Auto-Save: ");
-            System.err.println("Markable level "+getMarkableLevelName()+" is clean, not saving!");
+            if (isVerbose()) System.err.println("Markable level "+getMarkableLevelName()+" is clean, not saving!");
             return;
         }
         
         if (getIsReadOnly()==true)
         {
-        	if (autoSaveMode)
-        	{
-        		System.err.println("Auto-Save: "+"Markable level "+getMarkableLevelName()+" is READ-ONLY, not saving!");        		
-        	}
-        	else
-        	{
-        		JOptionPane.showMessageDialog(null,"Markable level "+getMarkableLevelName()+" is READ-ONLY, not saving!","Save problem",JOptionPane.INFORMATION_MESSAGE);
-        	}
+        	if (autoSaveMode) { System.err.println("Auto-Save: "+"Markable level "+getMarkableLevelName()+" is READ-ONLY, not saving!");}
+        	else              { JOptionPane.showMessageDialog(null,"Markable level "+getMarkableLevelName()+" is READ-ONLY, not saving!","Save problem",JOptionPane.INFORMATION_MESSAGE); }
             return;
         }
         
         if (autoSaveMode) System.err.print("Auto-Save: ");
-        System.err.println("Saving level "+getMarkableLevelName()+" ... ");
-        if (newFileName.equals("")==false)
-        {
-            markableFileName = newFileName;
-        }
+        if (isVerbose()) System.err.println("Saving level "+getMarkableLevelName()+" ... ");
+        if (newFileName.equals("")==false){ markableFileName = newFileName; }
                 
         /* Test file for existence */
         File destinationFile = new File(markableFileName);
@@ -768,33 +702,19 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
         	// Since it exists but is read-only, it is protected and should not be writable
             if (destinationFile.canWrite() == false)
             {
-            	if (autoSaveMode)
-            	{
-            		System.err.println("Auto-Save: "+"Cannot save markables on level "+getMarkableLevelName()+"!'Write' not allowed!");
-            	}
-            	else
-            	{
-            		JOptionPane.showMessageDialog(null,"Cannot save markables on level "+getMarkableLevelName()+"!\n'Write' not allowed!","Save problem:"+markableFileName,JOptionPane.WARNING_MESSAGE);	
-            	}                
+            	if (autoSaveMode) { System.err.println("Auto-Save: "+"Cannot save markables on level "+getMarkableLevelName()+"!'Write' not allowed!"); }
+            	else              { JOptionPane.showMessageDialog(null,"Cannot save markables on level "+getMarkableLevelName()+"!\n'Write' not allowed!","Save problem:"+markableFileName,JOptionPane.WARNING_MESSAGE);	 }                
                 return;
             }
         	
             /* The file to be written is already existing and writable, so create backup copy first*/
             /* This should be the normal case */
         	// 
-            if (autoSaveMode) System.err.print("Auto-Save: ");
-            
-            System.err.println("Filename "+destinationFile.getAbsolutePath()+" exists, creating *timestamped* backup file!");
+            if (autoSaveMode && isVerbose()) System.err.print("Auto-Save: ");            
+            if (isVerbose()) System.err.println("Filename "+destinationFile.getAbsolutePath()+" exists, creating *timestamped* backup file!");
             String timeStamp = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS").format(new Date());
                         
             File oldDestinationFile = new File(this.markableFileName +"."+timeStamp+".bak");
-
-//            if (oldDestinationFile.exists())
-//            {
-//                System.err.println("Removing old .bak file!");
-//                oldDestinationFile.delete();
-//                oldDestinationFile = new File(markableFileName +".bak");
-//            }            
             destinationFile.renameTo(oldDestinationFile);
         }                   
         
@@ -803,24 +723,12 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
         System.err.println("Writing to file " + markableFileName);
         
         BufferedWriter fw = null;
-        try
-        {
-            fw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(markableFileName),this.encoding));
-        }
-        catch (java.io.IOException ex)
-        {
-            ex.printStackTrace();
-        }
+        try 							{ fw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(markableFileName),this.encoding)); }
+        catch (java.io.IOException ex)	{ ex.printStackTrace(); }
         
         String rootElement ="";
-        if (markableNameSpace.equals(""))
-        {
-            rootElement = "<markables>";
-        }
-        else
-        {
-            rootElement = "<markables xmlns=\""+markableNameSpace+"\">";
-        }
+        if (markableNameSpace.equals("")) { rootElement = "<markables>"; }
+        else { rootElement = "<markables xmlns=\""+markableNameSpace+"\">"; }
                 
         try
         {
@@ -832,134 +740,32 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
             System.out.println(ex.getMessage());
         }
         
-        Set allMarkableIDsSet = this.markableHash.keySet();
-        System.err.println("Saving "+allMarkableIDsSet.size()+" markables");
-        Iterator allMarkableIDs = allMarkableIDsSet.iterator();
-        Markable currentMarkable = null;
-
+        Set<String> allMarkableIDsSet = this.markableHash.keySet();
+        if (isVerbose()) System.err.println("Saving "+allMarkableIDsSet.size()+" markables");
+        Iterator<String> allMarkableIDs = allMarkableIDsSet.iterator();
+        Markable currentMarkable = null;        
         while(allMarkableIDs.hasNext())
         {
             currentMarkable = (Markable) markableHash.get(allMarkableIDs.next());
             try
             {
-                fw.write(MarkableHelper.toXMLElement(currentMarkable)+"\n");
+                fw.write(MarkableHelper.toXMLElement(currentMarkable, getCurrentAnnotationScheme())+"\n");
             }
-            catch (java.io.IOException ex)
-            {
-                System.err.println("Error saving "+(currentMarkable.getID()));
-            }
-        }
-        
+            catch (java.io.IOException ex) { System.err.println("Error saving "+(currentMarkable.getID())); }
+        }        
         try
         {
             fw.write("</markables>");
             fw.close();
         }
-        catch (java.io.IOException ex)
-        {
-            System.err.println(ex.getMessage());
-        }
-        
+        catch (java.io.IOException ex) { System.err.println(ex.getMessage()); }        
         setIsDirty(false,false);        
     }
                
-   /* 
-    public final void saveTransposedMarkables(String oldLang, ArrayList absoluteWords)
-    {       
-        String newFileName = markableFileName;
-        String fileNameToUse = newFileName.substring(0,newFileName.indexOf("_"));
-        fileNameToUse=fileNameToUse+"_merged"+newFileName.substring(newFileName.indexOf("_"));
-
-        System.err.println("Transposing and saving level "+markableLevelName+" ... ");
-        newFileName=fileNameToUse;
-        
-        File destinationFile = new File(newFileName);
-        
-        //Test file for existence 
-        if(destinationFile.exists())
-        {
-            // The file to be written is already existing, so create backup copy first
-            // This should be the normal case 
-            System.err.println("Filename "+destinationFile.getAbsolutePath()+" exists, creating backup (.bak) file!");
-            File oldDestinationFile = new File(newFileName +".bak");
-            if (oldDestinationFile.exists())
-            {
-                System.out.println("Removing old .bak file!");
-                oldDestinationFile.delete();
-                oldDestinationFile = new File(newFileName +".bak");
-            }
-            destinationFile.renameTo(oldDestinationFile);
-        }
-        
-	// Write DOM to file 
-        System.out.println("Writing transposed markables to file " + newFileName);
-        
-        BufferedWriter fw = null;
-        try
-        {
-            fw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(newFileName),this.encoding));
-        }
-        catch (java.io.IOException ex)
-        {
-            ex.printStackTrace();
-        }
-
-        String rootElement ="";
-        
-        if (markableNameSpace.equals(""))
-        {
-            rootElement = "<markables>";
-        }
-        else
-        {
-            rootElement = "<markables xmlns=\""+markableNameSpace+"_"+oldLang+"\">";
-        }
-        
-        try
-        {
-            fw.write(markableFileHeader+"\n"+dtdReference+"\n"+rootElement+"\n");
-            fw.flush();
-        }
-        catch (java.io.IOException ex)
-        {
-            System.out.println(ex.getMessage());
-        }
-        
-        Set allMarkableIDsSet = this.markableHash.keySet();
-        System.err.println("Saving "+allMarkableIDsSet.size()+" transposed markables");
-        Iterator allMarkableIDs = allMarkableIDsSet.iterator();
-        Markable currentMarkable = null;
-        //for (int z=0;z<num;z++)
-        while(allMarkableIDs.hasNext())
-        {
-            currentMarkable = (Markable) markableHash.get(allMarkableIDs.next());
-            try
-            {
-                fw.write(MarkableHelper.transposeMarkable(currentMarkable, oldLang, absoluteWords)+"\n");
-            }
-            catch (java.io.IOException ex)
-            {
-                System.out.println("Error saving "+(currentMarkable.getID()));
-            }
-        }
-        
-        try
-        {
-            fw.write("</markables>");
-            fw.close();
-        }
-        catch (java.io.IOException ex)
-        {
-            System.out.println(ex.getMessage());
-        }       
-        
-    }
-    
-    */
     
     /** This method initializes one MarkableRelation object for each attribute of type MARKABLE_SET, MARKABLE_POINTER and SET_POINTER and
      *  adds it to this MarkableLevel's MarkableRelations list. */
-    public final void initMarkableRelations()
+    public final void initMarkableRelations(MMAX2 _mmax2)
     {
         MMAX2Attribute[] currentAttributes = null;
         MMAX2Attribute currentAttribute = null;
@@ -968,38 +774,49 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
         String currentValue = "";
         
         // Get all Attributes of type MARKABLE_SET
-        currentAttributes = this.annotationscheme.getAttributesByType(AttributeAPI.MARKABLE_SET);
+        currentAttributes = annotationscheme.getAttributesByType(AttributeAPI.MARKABLE_SET);
         // Iterate over all Attributes of type MARKABLE_SET
         for (int i=0;i<currentAttributes.length;i++)
         {
             // Get current Attribute, e.g. member
             currentAttribute = (MMAX2Attribute) currentAttributes[i];
-            currentAttributeName = currentAttribute.getLowerCasedAttributeName();
+            currentAttributeName = currentAttribute.getDisplayName();
             // Create one MarkableRelation for each Attribute of type MARKABLE_SET (always order, for now)
-            MarkableRelation newRelation = new MarkableRelation(currentAttributeName,currentAttribute.getType(),true, currentAttribute.getLineWidth(), currentAttribute.getLineColor(), currentAttribute.getLineStyle(), currentAttribute.getMaxSize(),currentAttribute.getIsDashed(), currentAttribute.getAttributeNameToShowInMarkablePointerFlag());
+            MarkableRelation newRelation = new MarkableRelation(currentAttributeName,
+            		currentAttribute.getType(),
+            		true, 
+            		currentAttribute.getLineWidth(), 
+            		currentAttribute.getLineColor(), 
+            		currentAttribute.getLineStyle(), 
+            		currentAttribute.getMaxSize(),
+            		currentAttribute.getIsDashed(), 
+            		currentAttribute.getAttributeNameToShowInMarkablePointerFlag(),
+            		_mmax2);
+
             // Add newly created MarkableRelation to respective HashMap
-            MarkableSetRelations.put(currentAttributeName,newRelation);
+            markableSetRelations.put(currentAttributeName,newRelation);
             // Associate currentAttribute with pertaining MarkableRelation
             currentAttribute.setMarkableRelation(newRelation);
             newRelation = null;
         }
                 
         // Iterate over all MarkableSetRelations
-        Iterator allAttributeNames = MarkableSetRelations.keySet().iterator();
+        Iterator<String> allAttributeNames = markableSetRelations.keySet().iterator();
         while (allAttributeNames.hasNext())
         {
-            MarkableRelation currentRelation = (MarkableRelation) MarkableSetRelations.get((String)allAttributeNames.next());
+            MarkableRelation currentRelation = (MarkableRelation) markableSetRelations.get((String)allAttributeNames.next());
             currentAttributeName = currentRelation.getAttributeName();
             
             // Iterate over all Markables on this MarkableLevel
-            Set allMarkableIDsSet = markableHash.keySet();
-            Iterator it = allMarkableIDsSet.iterator();
+            Set<String> allMarkableIDsSet = markableHash.keySet();
+            Iterator<String> it = allMarkableIDsSet.iterator();
             while(it.hasNext())                
             {
                 // Get current Markable
                 currentMarkable = (Markable)markableHash.get(it.next());
                 // Try to retrieve value of current attribute from current markable, e.g. from member
                 currentValue = currentMarkable.getAttributeValue(currentAttributeName);
+//            	System.err.println(currentValue);
                 if (currentValue != null && currentValue.equals("")==false && currentValue.equals(MMAX2.defaultRelationValue)==false)
                 {
                     // The current Markable has a non-empty value for the current attribute, so add current markable to Relation for this attribute
@@ -1014,6 +831,33 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
             }
         }// for all attributes
         
+        
+        if (PURGE_SINGLETON_SETS)
+        {
+	        // Note: Some sets might be singletons if they were created / edited outside the tool
+	        // Iterate over all MarkableSetRelations again
+	        allAttributeNames = markableSetRelations.keySet().iterator();
+	        while (allAttributeNames.hasNext())
+	        {
+	            MarkableRelation currentRelation = (MarkableRelation) markableSetRelations.get((String)allAttributeNames.next());
+	        	System.err.println("\nNote: Purging singleton sets for attribute "+currentRelation.getAttributeName());
+	            MarkableSet[] sets = currentRelation.getMarkableSets(true);
+	            for (int m=0;m<sets.length;m++)
+	            {
+	            	MarkableSet set = sets[m];
+	            	if (set.getSize()==1)
+	            	{
+	            		Markable sm = set.getInitialMarkable();
+	            		System.err.println("\n"+sm);
+	            		sm.setAttributeValue(currentRelation.getAttributeName(), MMAX2.defaultRelationValue);
+	            		sm.setAttributeValueToNode(currentRelation.getAttributeName(), MMAX2.defaultRelationValue);
+	            		set.removeMeFromMarkableRelation();
+	            	}
+	            }	            
+	        }// for all attributes
+        }        
+        
+        
         // Get all Attributes of type MARKABLE_POINTER
         currentAttributes = this.annotationscheme.getAttributesByType(AttributeAPI.MARKABLE_POINTER);
         // Iterate over all Attributes of type MARKABLE_POINTER
@@ -1021,21 +865,21 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
         {
             // Get current Attribute, e.g. antecedent
             currentAttribute = (MMAX2Attribute) currentAttributes[i];
-            currentAttributeName = currentAttribute.getLowerCasedAttributeName();
+            currentAttributeName = currentAttribute.getDisplayName();
             // Create one MarkableRelation for each Attribute of type MARKABLE_POINTER (always order, for now)
-            MarkableRelation newRelation = new MarkableRelation(currentAttributeName,currentAttribute.getType(),true, currentAttribute.getLineWidth(), currentAttribute.getLineColor(), currentAttribute.getLineStyle(),currentAttribute.getMaxSize(),currentAttribute.getIsDashed(), currentAttribute.getAttributeNameToShowInMarkablePointerFlag());
+            MarkableRelation newRelation = new MarkableRelation(currentAttributeName,currentAttribute.getType(),true, currentAttribute.getLineWidth(), currentAttribute.getLineColor(), currentAttribute.getLineStyle(),currentAttribute.getMaxSize(),currentAttribute.getIsDashed(), currentAttribute.getAttributeNameToShowInMarkablePointerFlag(), mmax2);
             // Add newly created MarkableRelation to respective HashMap
-            MarkablePointerRelations.put(currentAttributeName,newRelation);
+            markablePointerRelations.put(currentAttributeName,newRelation);
             // Associate currentAttribute with pertaining MarkableRelation
             currentAttribute.setMarkableRelation(newRelation);            
             newRelation = null;
         }
         
         // Iterate over all MarkablePointerRelations
-        allAttributeNames = MarkablePointerRelations.keySet().iterator();
+        allAttributeNames = markablePointerRelations.keySet().iterator();
         while (allAttributeNames.hasNext())
         {
-            MarkableRelation currentRelation = (MarkableRelation) MarkablePointerRelations.get((String)allAttributeNames.next());
+            MarkableRelation currentRelation = (MarkableRelation) markablePointerRelations.get((String)allAttributeNames.next());
             currentAttributeName = currentRelation.getAttributeName();
             
             // Iterate over all Markables on this MarkableLevel
@@ -1060,10 +904,10 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
     {
         ArrayList templist = new ArrayList();
         MarkableRelation[] result = new MarkableRelation[0];
-        Iterator allAttributeNames = MarkableSetRelations.keySet().iterator(); // slow
+        Iterator allAttributeNames = markableSetRelations.keySet().iterator(); // slow
         while (allAttributeNames.hasNext())
         {
-            MarkableRelation currentRelation = (MarkableRelation) MarkableSetRelations.get((String)allAttributeNames.next());
+            MarkableRelation currentRelation = (MarkableRelation) markableSetRelations.get((String)allAttributeNames.next());
             String currentAttributeName = currentRelation.getAttributeName();
             // Todo: Optimize acces to getAttributeValue!
             if (markable.getAttributeValue(currentAttributeName)!=null && markable.getAttributeValue(currentAttributeName).equals("")==false && markable.getAttributeValue(currentAttributeName).equals(MMAX2.defaultRelationValue)==false)
@@ -1086,7 +930,7 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
         MarkablePointer[] result = null;
         
         // Get MarkablePointer of name pointerRelationName
-        MarkableRelation requiredPointerRelation = (MarkableRelation)MarkablePointerRelations.get(pointerRelationName);
+        MarkableRelation requiredPointerRelation = (MarkableRelation)markablePointerRelations.get(pointerRelationName);
         // Get list of all MarkablePointers pointing to markable
         templist = (ArrayList)Arrays.asList(requiredPointerRelation.getMarkablePointersWithTargetMarkable(markable));
         
@@ -1106,12 +950,12 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
     {
         ArrayList templist = new ArrayList();
         MarkableRelation[] result = new MarkableRelation[0];
-        Iterator allAttributeNames = MarkablePointerRelations.keySet().iterator();//slow
+        Iterator allAttributeNames = markablePointerRelations.keySet().iterator();//slow
         // Iterate over all pointer relations (by name)
         while (allAttributeNames.hasNext())
         {
             // Get current MarkablePointerRelation
-            MarkableRelation currentRelation = (MarkableRelation) MarkablePointerRelations.get((String)allAttributeNames.next());
+            MarkableRelation currentRelation = (MarkableRelation) markablePointerRelations.get((String)allAttributeNames.next());
             // Get attribute name associated with relation
             String currentAttributeName = currentRelation.getAttributeName();
             // Todo: Optimize access to getAttributeValue!
@@ -1135,11 +979,11 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
     public final ArrayList getMarkablePointersForTargetMarkable(Markable markable)
     {
         ArrayList result = new ArrayList();
-        Iterator allAttributeNames = MarkablePointerRelations.keySet().iterator();//slow
+        Iterator allAttributeNames = markablePointerRelations.keySet().iterator();//slow
         while (allAttributeNames.hasNext())
         {
             // Get current MarkablePointerRelation
-            MarkableRelation currentRelation = (MarkableRelation) MarkablePointerRelations.get((String)allAttributeNames.next());
+            MarkableRelation currentRelation = (MarkableRelation) markablePointerRelations.get((String)allAttributeNames.next());
             result.addAll(Arrays.asList(currentRelation.getMarkablePointersWithTargetMarkable(markable)));
         }
         return result;
@@ -1179,13 +1023,13 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
         activatorComboBox = null;
         switchCustomizations.removeActionListener(this);
         switchCustomizations = null;
-        MarkableSetRelations.clear();
-        MarkableSetRelations = null;
-        MarkablePointerRelations.clear();
-        MarkablePointerRelations = null;
+        markableSetRelations.clear();
+        markableSetRelations = null;
+        markablePointerRelations.clear();
+        markablePointerRelations = null;
         annotationscheme.destroyDependentComponents();
         annotationscheme = null;
-        System.gc();        
+//        System.gc();        
     }
     
     public final MMAX2AnnotationScheme getCurrentAnnotationScheme()
@@ -1412,67 +1256,9 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
         }
         return temp;
     }
+   
     
-
-    
-
-    /** AdmissibleCategories is a list of those REs that should be included in the list as source.
-     * The Category of the RE that a Markable is mapped to is stored as attribute 'mapped_to_re'. 
-       Markables that are unmapped to any any RE are always included*/
-/*    public final String[] createCleansableKeyList(String memberAttributeName, ArrayList admissibleCategories)
-    {
-        HashMap sets = new HashMap();
-        ArrayList allMarkables = getMarkables();
-        for (int e=0;e<allMarkables.size();e++)
-        {
-            String currentValue = ((Markable)allMarkables.get(e)).getAttributeValue(memberAttributeName,"");
-            if (currentValue.equals(""))continue;
-            // currentMarkable has a valid value in memberAttributeName
-            // Get ArrayList mapped to it, if any
-            ArrayList temp = (ArrayList) sets.get(currentValue);
-            if (temp==null) temp = new ArrayList();
-            temp.add((Markable)allMarkables.get(e));
-            sets.put(currentValue,temp);
-            temp = null;
-        }
-        ArrayList result = new ArrayList();
-        // Here, all Markables have been processed
-        Iterator allSetValues = sets.keySet().iterator();
-        while (allSetValues.hasNext())
-        {
-            ArrayList current = (ArrayList) sets.get((String) allSetValues.next());
-            if (current.size()==1) continue;
-            
-            Markable[] temp = (Markable[])current.toArray(new Markable[0]);
-            //java.util.Arrays.sort(temp,new ShorterBeforeLongerComparator());
-            java.util.Arrays.sort(temp,new DiscourseOrderMarkableComparator());
-            current = new ArrayList(java.util.Arrays.asList(temp));            
-            
-            // Iterate over all Markables mapped to current member value, from bottom to top
-            for (int s=current.size()-1;s>=0;s--)
-            {
-                // Get Markable at current position
-                Markable currentAna = (Markable)current.get(s);
-                if (currentAna.getAttributeValue("mapped_to_re","").equals("") ||
-                    admissibleCategories.contains(currentAna.getAttributeValue("mapped_to_re","XXX")))
-                {
-                    // CurrentAna is of the type that is admissible for the keylist,
-                    // or it is not mapped and has to be added as well to produce a recall error.
-                    // Iterate over all set members before current ana, and add the pairs
-                    for (int e=s-1;e>=0;e--)
-                    {
-                        Markable currentAnte = (Markable) current.get(e);
-                        result.add(currentAnte.getID()+" "+currentAna.getID());    
-//                        System.out.println("Adding to ckl: "+currentAnte.getID()+" "+currentAna.getID()+" "+currentAna.getAttributeValue("mapped_to_re","***"));
-                    }
-                }                
-            }
-        }
-        return (String[]) result.toArray(new String[0]);
-    }
-*/
-    
-    public final ArrayList getMatchingMarkables(String queryString)
+    public final ArrayList  getMatchingMarkables(String queryString)
     {
         MMAX2QueryTree tree = null;
         try
@@ -1529,88 +1315,76 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
     
     /** This method is called from the MMAX2DiscourseLoader after the MMAX2Discourse field has been set
         on this level. Markable spans are expanded on the basis of the element IDs actually
-        contained in the base data, and not by mere interpolation of integer IDs! 
-        
+        contained in the base data, and not by mere interpolation of integer IDs!         
         Synopsis: This method basically iterates over all elements in this.markableDOM, creates a Markable object
-        for each by means of the Markable constructor, and adds that to this.markableHash. 
-     
+        for each by means of the Markable constructor, and adds that to this.markableHash.      
      */
     public final int createMarkables()
     {        
-        boolean readOnlyAtStart=getIsReadOnly();
-        
+        boolean readOnlyAtStart=getIsReadOnly();        
         int maxIDNum = 0;
         boolean added = false;
         if (isDefined())
         {            
-            // Get list of all markable elements currently existing on this level
+            // Get list of all markable elements currently existing on this level. 
+        	// These were read from a markables file.
+        	// Markables might contain attributes that do not conform to anno scheme!!
             NodeList allMarkableNodes = markableDOM.getElementsByTagName("markable");
             Node currentMarkableNode = null;
-            int len = allMarkableNodes.getLength();
-        
-            // New: Make hash sufficiently large from the beginning
-            markableHash = new HashMap(len);
-            
+            int len = allMarkableNodes.getLength();        
+            markableHash = new HashMap<String, Markable>(len);            
             String currentID = "";
-            int currentIDNum =0;
+            int currentIDNum = 0;
             String currentSpan = "";
         
             Markable newMarkable=null;
-            HashMap attributes = null;
+            HashMap<String, String> attributes = null;
             // Iterate over all Markable elements
             for (int z=0;z<len;z++)
             {
-                // Get current markable element
                 currentMarkableNode = allMarkableNodes.item(z);
-                // For each markable check whether the mmax_level attribute is present
                 if (currentMarkableNode.getAttributes().getNamedItem("mmax_level")==null)
                 {
-                    // Remember that soth. was added
-                    added = true;
                     ((Element)currentMarkableNode).setAttribute("mmax_level",getMarkableLevelName());
                     setIsDirty(true, false);
+                    // Remember that soth. was added
+                    added = true;
                 }
                 
-                // Create attributes HashMap for Markable object attributes. 
-                attributes = MMAX2Utils.convertNodeMapToHashMap(currentMarkableNode.getAttributes());
+                // Create attributes HashMap for Markable object attributes.
+                // Attributes and values might come in any casing, and need to be normalized to their correct one
+                // System.err.println(currentMarkableNode.getAttributes());
+                attributes = MMAX2Utils.convertNodeMapToHashMap(currentMarkableNode.getAttributes(), this.getCurrentAnnotationScheme());
+                // 1.15: attributes and values are in canonical casing here (i.e. as defined in scheme)
+                
                 // Extract numerical part of current id
                 currentIDNum = MMAX2Utils.parseID((String)attributes.get("id"));
                 if (currentIDNum > maxIDNum) maxIDNum = currentIDNum;
                 // Remove id and span attributes.
                 attributes.remove("id");
                 attributes.remove("span");            
-                try
-                {
-                    currentID = currentMarkableNode.getAttributes().getNamedItem("id").getNodeValue();
-                }
+                try { currentID = currentMarkableNode.getAttributes().getNamedItem("id").getNodeValue(); }
                 catch (java.lang.NullPointerException ex)
                 {
                     JOptionPane.showMessageDialog(null,"Missing ID attribute on markable!","MarkableLevel: "+markableFileName,JOptionPane.ERROR_MESSAGE);                
                 }
             
-                try
-                {
-                    currentSpan = currentMarkableNode.getAttributes().getNamedItem("span").getNodeValue();
-                }
+                try { currentSpan = currentMarkableNode.getAttributes().getNamedItem("span").getNodeValue(); }
                 catch (java.lang.NullPointerException ex)
                 {
-                    JOptionPane.showMessageDialog(null,"Missing span attribute on markable!","MarkableLevel: "+markableFileName,JOptionPane.ERROR_MESSAGE);
-                    //System.exit(0);                                
+                    JOptionPane.showMessageDialog(null,"Missing span attribute on markable!","MarkableLevel: "+markableFileName,JOptionPane.ERROR_MESSAGE);                                
                 }            
-                // Create new Markable object
-                // parseSpan is negligible
-                //newMarkable = new Markable(currentMarkableNode, currentID, MarkableHelper.parseSpan(currentSpan), attributes,this);
+
+                // Create new Markable object (not much will happen there)
+                // attributes hash has been normalized already. currentMarkableNode is still in the format read from the file. 
                 newMarkable = new Markable(currentMarkableNode, currentID, parseMarkableSpan(currentSpan,this.currentDiscourse.getWordDOM(),this), attributes,this);
                 
-                // Create mapping of Markable to its ID                
+                // Create mapping of Markable to its ID
                 markableHash.put(currentID, newMarkable);
                 newMarkable = null;            
             }
         }  
-        else
-        {
-            markableHash = new HashMap();
-        }
+        else { markableHash = new HashMap<String, Markable>(); }
         
         if (added)
         {
@@ -1622,15 +1396,9 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
             {
                 System.err.println("The attribute 'mmax_level' has been added to at least one markable on level "+getMarkableLevelName()+"!");
             }
-        }
-        
-        if (readOnlyAtStart == false && getIsReadOnly())
-        {
-            System.err.println("Level "+getMarkableLevelName()+" has been set to read-only!");
-        }
-        
-        //System.err.println(markableHash);
-        
+        }        
+        if (readOnlyAtStart == false && getIsReadOnly()) { System.err.println("Level "+getMarkableLevelName()+" has been set to read-only!"); }
+                
         return maxIDNum;
     }
 
@@ -2898,6 +2666,8 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
 	String firstIDString;
 	String lastIDString;
 
+//	System.err.println(span);
+	
         // Create list to receive intermediate result
 	ArrayList newWordsIDList = new ArrayList();
 
@@ -2949,6 +2719,7 @@ public class MarkableLevel implements java.awt.event.ActionListener, MarkableLev
                 // add its id to the list
                 newWordsIDList.add(nextNode.getAttributes().getNamedItem("id").getNodeValue());
                 String justAddedID = nextNode.getAttributes().getNamedItem("id").getNodeValue();
+//                System.err.println(justAddedID);
                 double justAddedValue = Double.parseDouble(justAddedID.substring(justAddedID.indexOf("_")+1));
                 // Break if just added was last in span
                 if (justAddedID.equalsIgnoreCase(lastIDString))

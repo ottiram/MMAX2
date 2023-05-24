@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Mark-Christoph M�ller
+ * Copyright 2021 Mark-Christoph Müller
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,6 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.Map.Entry;
@@ -61,7 +60,6 @@ import org.eml.MMAX2.annotation.markables.MarkableIDComparator;
 import org.eml.MMAX2.annotation.markables.MarkableLevel;
 import org.eml.MMAX2.annotation.markables.MarkableLevelPositionComparator;
 import org.eml.MMAX2.annotation.markables.StartingMarkableComparator;
-import org.eml.MMAX2.annotation.scheme.MMAX2Attribute;
 import org.eml.MMAX2.api.DiscourseAPI;
 import org.eml.MMAX2.core.MMAX2;
 import org.eml.MMAX2.gui.document.MMAX2Document;
@@ -76,10 +74,10 @@ public class MMAX2Discourse implements DiscourseAPI
 {   
     private String nameSpace = null;
     
-    private HashMap hash = null;   
+    private HashMap<String, String> hash = null;   
     
-    private ArrayList recentTextEntries = new ArrayList();
-    private ArrayList recentAttributeEntries = new ArrayList();
+    private ArrayList<String> recentTextEntries = new ArrayList<String>();
+    private ArrayList<String> recentAttributeEntries = new ArrayList<String>();
     
     private String commonBasedataPath="";
     
@@ -91,18 +89,18 @@ public class MMAX2Discourse implements DiscourseAPI
 
     /** Contains at position X the ID of the Discourse Element with Discourse position X */
     protected String[] discourseElementAtPosition = null;        
-    protected ArrayList temporaryDiscourseElementAtPosition=null;
+    protected ArrayList<String> temporaryDiscourseElementAtPosition=null;
 
     /** Maps IDs of DiscourseElements to their numerical Discourse positions. Used by getDiscoursePositionFromDiscourseElementId(String id). */
-    protected HashMap discoursePositionOfDiscourseElement=null;    
+    protected HashMap<String, Integer> discoursePositionOfDiscourseElement=null;    
     
     /** Contains at position X the display start position (i.e. character position in display string) of the DE with Discourse position X. */   
     protected Integer[] displayStartPosition = null;    
-    protected ArrayList temporaryDisplayStartPosition=null;
+    protected ArrayList<Integer> temporaryDisplayStartPosition=null;
     
     /** Contains at position X the display start position (i.e. character position in display string) of the DE with Discourse position X. */    
     protected Integer[] displayEndPosition = null;
-    protected ArrayList temporaryDisplayEndPosition=null;        
+    protected ArrayList<Integer> temporaryDisplayEndPosition=null;        
     
     protected StringWriter incrementalTransformationResult = null; 
     
@@ -111,8 +109,8 @@ public class MMAX2Discourse implements DiscourseAPI
     
     protected MarkableChart chart;
     
-    protected HashMap markableDisplayAssociation=null;
-    protected HashMap hotSpotDisplayAssociation=null;
+    protected HashMap<Object, Object> markableDisplayAssociation=null;
+    protected HashMap<Object, Object> hotSpotDisplayAssociation=null;
     
     public static StartingMarkableComparator STARTCOMP=null;
     public static EndingMarkableComparator ENDCOMP=null;
@@ -129,13 +127,13 @@ public class MMAX2Discourse implements DiscourseAPI
     public MMAX2Discourse(boolean withGUI) 
     {    	
         hasGUI = withGUI;
-        discoursePositionOfDiscourseElement = new HashMap();
+        discoursePositionOfDiscourseElement = new HashMap<String, Integer>();
         chart = new MarkableChart(this);
-        temporaryDisplayStartPosition = new ArrayList();
-        temporaryDisplayEndPosition = new ArrayList();
-        temporaryDiscourseElementAtPosition = new ArrayList();
-        markableDisplayAssociation = new HashMap();
-        hotSpotDisplayAssociation = new HashMap();
+        temporaryDisplayStartPosition = new ArrayList<Integer>();
+        temporaryDisplayEndPosition = new ArrayList<Integer>();
+        temporaryDiscourseElementAtPosition = new ArrayList<String>();
+        markableDisplayAssociation = new HashMap<Object, Object>();
+        hotSpotDisplayAssociation = new HashMap<Object, Object>();
         
         STARTCOMP = new StartingMarkableComparator();
         ENDCOMP = new EndingMarkableComparator();
@@ -184,26 +182,6 @@ public class MMAX2Discourse implements DiscourseAPI
     	return buildDiscourse(infile,"");
     }
     
-    /*
-    public static MMAX2Discourse buildDiscourse(String infile)
-    {
-        long start = System.currentTimeMillis();
-        System.err.print("   loading ... ");
-        MMAX2DiscourseLoader loader = new MMAX2DiscourseLoader(infile, false,"");
-        System.err.println("("+(System.currentTimeMillis()-start)+")");
-        MMAX2Discourse currentDiscourse = loader.getCurrentDiscourse();                
-        
-        start = System.currentTimeMillis();
-        System.err.print("   style sheet ... ");
-        currentDiscourse.applyStyleSheet(loader.getCommonStylePath()+"generic_nongui_style.xsl");
-        System.err.println("("+(System.currentTimeMillis()-start)+")");
-        start = System.currentTimeMillis();
-        System.err.print("   initializing ... ");
-        currentDiscourse.performNonGUIInitializations();
-        System.err.println("("+(System.currentTimeMillis()-start)+")");
-        return currentDiscourse;
-    }
-    */
     public final void setNameSpace(String _nameSpace)
     {
         nameSpace = _nameSpace;
@@ -232,7 +210,7 @@ public class MMAX2Discourse implements DiscourseAPI
     {
         discoursePositionOfDiscourseElement.clear();
         discoursePositionOfDiscourseElement = null;
-        discoursePositionOfDiscourseElement = new HashMap();
+        discoursePositionOfDiscourseElement = new HashMap<String, Integer>();
         chart = null;
         temporaryDisplayStartPosition = null;
         temporaryDisplayEndPosition = null;
@@ -249,7 +227,7 @@ public class MMAX2Discourse implements DiscourseAPI
         LEVELCOMP = null;        
         wordDOM = null;
         hash = null;
-        System.gc();
+
     }
     
     public final boolean getHasGUI()
@@ -257,18 +235,18 @@ public class MMAX2Discourse implements DiscourseAPI
         return hasGUI;
     }
     
-    protected void finalize()
-    {
-//        System.err.println("MMAX2Discourse is being finalized!");        
-        try
-        {
-            super.finalize();
-        }
-        catch (java.lang.Throwable ex)
-        {
-            ex.printStackTrace();
-        }        
-    }
+//    protected void finalize()
+//    {
+////        System.err.println("MMAX2Discourse is being finalized!");        
+//        try
+//        {
+//            super.finalize();
+//        }
+//        catch (java.lang.Throwable ex)
+//        {
+//            ex.printStackTrace();
+//        }        
+//    }
     
         
     public final MMAX2Document getDisplayDocument()
@@ -298,38 +276,18 @@ public class MMAX2Discourse implements DiscourseAPI
         }
     }
     
-    /*
-    public ArrayList<String> getAllUIMATypeMappings()
-    {
-    	HashSet tempResult = new HashSet();
-    	// Iterate over all levels
-    	MarkableLevel[] levels = chart.getLevels();
-    	for (int z=0;z<levels.length;z++)
-    	{
-    		tempResult.addAll(levels[z].getAllUIMATypeMappings());
-    	}    	
-    	
-    	ArrayList result = new ArrayList();
-    	Iterator iti = tempResult.iterator();
-    	while (iti.hasNext())
-    	{
-    		result.add((String)iti.next());
-    	}
-    	return result;
-    }
-*/
     
     public final Markable getMarkableAtDisplayAssociation(int displayPosition)
     {
         // No active/inactive distinction necessary, because only active Markables will have MarkableHandles anyway
         // WRONG: Handles of deactivated layers will stay around until next re-application !!
-        Markable result = (Markable) markableDisplayAssociation.get(new Integer(displayPosition));
+        Markable result = (Markable) markableDisplayAssociation.get(displayPosition);
         return result;
     }
      
     public final String getHotSpotAtDisplayAssociation(int displayPosition)
     {
-        String result = (String) hotSpotDisplayAssociation.get(new Integer(displayPosition));
+        String result = (String) hotSpotDisplayAssociation.get(displayPosition);
         return result;        
     }
     
@@ -337,12 +295,12 @@ public class MMAX2Discourse implements DiscourseAPI
     {
         Set all = markableDisplayAssociation.entrySet();
         Iterator it = all.iterator();
-        ArrayList positions = new ArrayList();
+        ArrayList<Integer> positions = new ArrayList<Integer>();
         Integer currentPos = null;
         boolean added = false;
         while (it.hasNext())
         {
-            Entry current = (Entry) it.next();
+            Entry<?, ?> current = (Entry<?, ?>) it.next();
             if (current.getValue().equals(removee))
             {
                 it.remove();
@@ -405,12 +363,12 @@ public class MMAX2Discourse implements DiscourseAPI
         return result;        
     }
         
-    public final int getDiscoursePositionAtDisplayPosition(int _displayPosition)
+    public final int getDiscoursePositionAtDisplayPosition(int displayPosition)
     {
         int DiscPos = -1;
         int startPos = 0;
         int endPos = 0;
-        Integer displayPosition = new Integer(_displayPosition);
+//        Integer displayPosition = new Integer(_displayPosition);
         // Try if pos is the exact beginning of a Discourse Element
         startPos = Arrays.binarySearch(displayStartPosition,displayPosition);
         if (startPos >= 0 && startPos < displayStartPosition.length)
@@ -465,7 +423,7 @@ public class MMAX2Discourse implements DiscourseAPI
         Node temp = getDiscourseElementNode(id);
         if (temp != null)
         {
-            result = new MMAX2DiscourseElement(temp.getFirstChild().getNodeValue(), temp.getAttributes().getNamedItem("id").getNodeValue(),this.getDiscoursePositionFromDiscourseElementID(temp.getAttributes().getNamedItem("id").getNodeValue()),MMAX2Utils.convertNodeMapToHashMap(temp.getAttributes()));        
+            result = new MMAX2DiscourseElement(temp.getFirstChild().getNodeValue(), temp.getAttributes().getNamedItem("id").getNodeValue(),this.getDiscoursePositionFromDiscourseElementID(temp.getAttributes().getNamedItem("id").getNodeValue()),MMAX2Utils.convertNodeMapToHashMap(temp.getAttributes(),null));        
         }
         return result;
         
@@ -573,7 +531,7 @@ public class MMAX2Discourse implements DiscourseAPI
         for (int z=0;z<markablesDEIDs.length;z++)
         {
             Node temp = getDiscourseElementNode(markablesDEIDs[z]);
-            tempList.add(new MMAX2DiscourseElement(temp.getFirstChild().getNodeValue(), temp.getAttributes().getNamedItem("id").getNodeValue(),this.getDiscoursePositionFromDiscourseElementID(temp.getAttributes().getNamedItem("id").getNodeValue()),MMAX2Utils.convertNodeMapToHashMap(temp.getAttributes())));
+            tempList.add(new MMAX2DiscourseElement(temp.getFirstChild().getNodeValue(), temp.getAttributes().getNamedItem("id").getNodeValue(),this.getDiscoursePositionFromDiscourseElementID(temp.getAttributes().getNamedItem("id").getNodeValue()),MMAX2Utils.convertNodeMapToHashMap(temp.getAttributes(),null)));
         }        
         return (MMAX2DiscourseElement[]) tempList.toArray(new MMAX2DiscourseElement[0]);
     }
@@ -585,7 +543,7 @@ public class MMAX2Discourse implements DiscourseAPI
         Node temp = getDiscourseElementNode(id);
         if (temp != null)
         {
-            result = new MMAX2DiscourseElement(temp.getFirstChild().getNodeValue(), temp.getAttributes().getNamedItem("id").getNodeValue(),this.getDiscoursePositionFromDiscourseElementID(temp.getAttributes().getNamedItem("id").getNodeValue()),MMAX2Utils.convertNodeMapToHashMap(temp.getAttributes()));        
+            result = new MMAX2DiscourseElement(temp.getFirstChild().getNodeValue(), temp.getAttributes().getNamedItem("id").getNodeValue(),this.getDiscoursePositionFromDiscourseElementID(temp.getAttributes().getNamedItem("id").getNodeValue()),MMAX2Utils.convertNodeMapToHashMap(temp.getAttributes(),null));        
         }
         return result;
     }
@@ -891,17 +849,13 @@ public class MMAX2Discourse implements DiscourseAPI
     
     public final void resetForStyleSheetReapplication()
     {
-    	boolean verbose = true;
+    	boolean verbose = false;
     	
     	String verboseVar = System.getProperty("verbose");
-    	if (verboseVar != null && verboseVar.equalsIgnoreCase("false"))
-    	{
-    		verbose = false;
-    	}
-
+    	if (verboseVar != null && verboseVar.equalsIgnoreCase("true")) { verbose = true; }
     	
-        if (verbose) System.err.print("Resetting ... ");
-        long time = System.currentTimeMillis();
+//        if (verbose) System.err.print("Resetting ... ");
+//        long time = System.currentTimeMillis();
         
         temporaryDiscourseElementAtPosition = new ArrayList();
         temporaryDisplayEndPosition = new ArrayList();
@@ -916,21 +870,18 @@ public class MMAX2Discourse implements DiscourseAPI
         
         chart.resetMarkablesForStyleSheetReapplication();
         chart.resetHasHandles();
-        System.gc();        
-        if (verbose) System.err.println("done in "+(System.currentTimeMillis()-time)+" milliseconds");
+//        System.gc();        
+//        if (verbose) System.err.println("done in "+(System.currentTimeMillis()-time)+" milliseconds");
 
     }
     
     /** This method is called when the deep refresh button on the MarkableLevelControlPanel is pressed. */
     public final void reapplyStyleSheet()
     {
-    	boolean verbose = true;
+    	boolean verbose = false;
     	
     	String verboseVar = System.getProperty("verbose");
-    	if (verboseVar != null && verboseVar.equalsIgnoreCase("false"))
-    	{
-    		verbose = false;
-    	}
+    	if (verboseVar != null && verboseVar.equalsIgnoreCase("true")) { verbose = true;}
     	
         /* Reset currentDocument to new (empty) one .*/
         mmax2.setCurrentDocument(new MMAX2Document(mmax2.currentDisplayFontName,mmax2.currentDisplayFontSize));
@@ -939,17 +890,17 @@ public class MMAX2Discourse implements DiscourseAPI
        
         resetForStyleSheetReapplication();
         
-        if (verbose) System.err.print("Reapplying stylesheet "+currentStyleSheet+" ... ");
-        long time = System.currentTimeMillis();
+//        if (verbose) System.err.print("Reapplying stylesheet "+currentStyleSheet+" ... ");
+//        long time = System.currentTimeMillis();
         applyStyleSheet("");
-        if (verbose) System.err.println("done in "+(System.currentTimeMillis()-time)+" milliseconds");     
+//        if (verbose) System.err.println("done in "+(System.currentTimeMillis()-time)+" milliseconds");     
         
-        if (verbose) System.err.print("Recreating Markable mappings ... ");
-        time = System.currentTimeMillis();        
+//        if (verbose) System.err.print("Recreating Markable mappings ... ");
+//        time = System.currentTimeMillis();        
         // Call to create e.g. DiscoursePositionToMarkableMappings
         chart.createDiscoursePositionToMarkableMappings();
         chart.setMarkableLevelDisplayPositions();
-        if (verbose) System.err.println("done in "+(System.currentTimeMillis()-time)+" milliseconds");
+//        if (verbose) System.err.println("done in "+(System.currentTimeMillis()-time)+" milliseconds");
         chart.updateLabels();
         mmax2.getCurrentTextPane().setStyledDocument((DefaultStyledDocument) mmax2.getCurrentDocument());
         chart.initMarkableRelations(); 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Mark-Christoph M�ller
+ * Copyright 2021 Mark-Christoph Müller
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,13 +35,7 @@ public class DiscourseElementFileLoader
  
     /** DOM representation of the currently loaded discourse element file. */
     protected DocumentImpl deDOM = null;
-    
-    /** Creates new DiscourseElementFileLoader */
-    public DiscourseElementFileLoader() 
-    {
         
-    }
-    
     /** Main class for testing purposes. Usage: DiscourseElementFileLoader [words.xml|gestures.xml|keyactions.xml] */
     public static void main(String args[])
     {        
@@ -57,14 +51,9 @@ public class DiscourseElementFileLoader
     }
     
     /** Load and parse discourse element file of name fileName. */
-    final public void load(String fileName)
+    final public int load(String fileName)
     {
-//        System.out.println(fileName);
-        File file = new File(fileName);
-        
-        //deFileName = fileName;
-        deFileName = file.getAbsolutePath();
-//        System.out.println(deFileName);
+        deFileName = new File(fileName).getAbsolutePath();
         DOMParser parser = new DOMParser();
         deDOM = null;        
         
@@ -72,38 +61,24 @@ public class DiscourseElementFileLoader
         {
             parser.setFeature("http://xml.org/sax/features/validation",false);
         }
-        catch (org.xml.sax.SAXNotRecognizedException ex)
+        catch (org.xml.sax.SAXNotRecognizedException | org.xml.sax.SAXNotSupportedException ex)
         {
             ex.printStackTrace();            
-            return;
-        }
-        catch (org.xml.sax.SAXNotSupportedException ex)
-        {
-            ex.printStackTrace();
-            return;
+            return 0;
         }
          
         try
         {
             parser.setFeature("http://apache.org/xml/features/dom/include-ignorable-whitespace",false);
         }
-        catch (org.xml.sax.SAXNotRecognizedException ex)
+        catch (org.xml.sax.SAXNotRecognizedException | org.xml.sax.SAXNotSupportedException ex)
         {
             ex.printStackTrace();            
-            return;
+            return 0;
         }
-        catch (org.xml.sax.SAXNotSupportedException ex)
-        {
-            ex.printStackTrace();
-            return;
-        }
-        
-        
-        
-        
+                                
         try
         {
-            //parser.parse(new InputSource("FILE:"+fileName));
         	parser.parse(new InputSource(new File(fileName).toURI().toString()));
         }
         catch (org.xml.sax.SAXParseException exception)
@@ -112,19 +87,16 @@ public class DiscourseElementFileLoader
             JOptionPane.showMessageDialog(null,error,"DiscourseElementFileLoader: "+fileName,JOptionPane.ERROR_MESSAGE);
             System.exit(0);
         }                
-        catch (org.xml.sax.SAXException exception)
+        catch (org.xml.sax.SAXException | java.io.IOException exception)
         {
             String error = exception.toString();
             JOptionPane.showMessageDialog(null,error,"DiscourseElementFileLoader: "+fileName,JOptionPane.ERROR_MESSAGE);
             System.exit(0);
         }
-        catch (java.io.IOException exception)
-        {
-            String error = exception.toString();
-            JOptionPane.showMessageDialog(null,error,"DiscourseElementFileLoader: "+fileName,JOptionPane.ERROR_MESSAGE);
-            System.exit(0);
-        }       
-        deDOM = (DocumentImpl) parser.getDocument();           
+
+        deDOM = (DocumentImpl) parser.getDocument();
+        int c=deDOM.getElementsByTagName("word").getLength();        
+        return c;
     }
     
     /** Get the entire DOM representation of the currently loaded discourse elements file. */

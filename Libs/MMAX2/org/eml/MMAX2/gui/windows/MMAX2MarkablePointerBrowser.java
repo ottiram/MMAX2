@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Mark-Christoph Müller
+ * Copyright 2021 Mark-Christoph MÃ¼ller
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,9 +43,9 @@ public class MMAX2MarkablePointerBrowser extends javax.swing.JFrame implements j
 {        
     MMAX2 mmax2 = null;
     JLabel levelBoxLabel = null;
-    JComboBox levelBox = null;
+    JComboBox<String> levelBox = null;
     JLabel attributeBoxLabel = null;
-    JComboBox attributeBox = null;
+    JComboBox<String> attributeBox = null;
     JCheckBox permanentBox = null;
     MMAX2Discourse discourse = null;
     JScrollPane treeViewPane = null;
@@ -66,7 +66,7 @@ public class MMAX2MarkablePointerBrowser extends javax.swing.JFrame implements j
                         
         getContentPane().add(treeViewPane);
         
-        levelBox = new JComboBox();
+        levelBox = new JComboBox<String>();
         levelBox.setFont(MMAX2.getStandardFont());
         levelBox.addItem("<none>");
         MarkableLevel[] levels = discourse.getCurrentMarkableChart().getMarkableLevels();
@@ -83,12 +83,12 @@ public class MMAX2MarkablePointerBrowser extends javax.swing.JFrame implements j
         panel.setLayout(new FlowLayout(FlowLayout.LEFT));
         levelBoxLabel = new JLabel("Level:");
         levelBoxLabel.setFont(MMAX2.getStandardFont());
-        Box tempBox = Box.createVerticalBox();
+//        Box tempBox = Box.createVerticalBox();
         tempLabelBox.add(levelBoxLabel);   
         tempLabelBox.add(Box.createVerticalStrut(10));
         tempControlBox.add(levelBox);
         
-        attributeBox = new JComboBox();
+        attributeBox = new JComboBox<String>();
         attributeBox.setFont(MMAX2.getStandardFont());
         attributeBox.addItem("<none>");
         attributeBox.addActionListener(this);
@@ -136,7 +136,7 @@ public class MMAX2MarkablePointerBrowser extends javax.swing.JFrame implements j
         // was selected on that level, and updates the displayed tree to reflect
         // all pointers belonging to that attribute.                
         
-        HashSet expanded = new HashSet();
+        HashSet<String> expanded = new HashSet<String>();
         int setCount = root.getChildCount();
         for (int z=0;z<setCount;z++)
         {            
@@ -165,6 +165,7 @@ public class MMAX2MarkablePointerBrowser extends javax.swing.JFrame implements j
                 {
                     currentPointer.setIsPermanent(true);
                     mmax2.putOnRenderingList(currentPointer);
+                    //mmax2.redraw(null);
                 }
                 else
                 {
@@ -174,7 +175,7 @@ public class MMAX2MarkablePointerBrowser extends javax.swing.JFrame implements j
                 DefaultMutableTreeNode pointerNode = new DefaultMutableTreeNode();
                 pointerNode.setUserObject(currentPointer);
                 root.add(pointerNode);               
-                ArrayList allTargets = new ArrayList(java.util.Arrays.asList(currentPointer.getTargetMarkables()));
+                ArrayList<Markable> allTargets = new ArrayList<Markable>(java.util.Arrays.asList(currentPointer.getTargetMarkables()));
                 for (int b=0;b<allTargets.size();b++)
                 {
                     DefaultMutableTreeNode elementNode = new DefaultMutableTreeNode(((Markable)allTargets.get(b)).toString());
@@ -195,6 +196,7 @@ public class MMAX2MarkablePointerBrowser extends javax.swing.JFrame implements j
             mmax2.setRedrawAllOnNextRefresh(true);
             mmax2.getCurrentTextPane().startAutoRefresh();
         }
+        mmax2.redraw(null);        
     }
     
     public final void updateAttributeList(String levelName)
@@ -215,7 +217,7 @@ public class MMAX2MarkablePointerBrowser extends javax.swing.JFrame implements j
             MMAX2Attribute[] attribs = level.getCurrentAnnotationScheme().getAttributesByType(AttributeAPI.MARKABLE_POINTER);
             for (int z=0;z<attribs.length;z++)
             {
-                attributeBox.addItem(attribs[z].getDisplayAttributeName());
+                attributeBox.addItem(attribs[z].getDisplayName());
             }
         }
         else
@@ -247,6 +249,7 @@ public class MMAX2MarkablePointerBrowser extends javax.swing.JFrame implements j
     
     public final void dismiss()
     {
+    	resetPermanentDisplay();
         mmax2.unregisterMarkablePointerBrowser(this);
         dispose();
     }

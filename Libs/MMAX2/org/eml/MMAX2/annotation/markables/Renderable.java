@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Mark-Christoph Müller
+ * Copyright 2021 Mark-Christoph MÃ¼ller
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,10 +24,12 @@ public interface Renderable
     public void unselect(MMAX2Document doc);
     public void refresh(Graphics2D graphics);
     public void updateLinePoints();
-    public boolean isOpaque();
+    public boolean isAmbient();
     public boolean containsMarkable(Markable markable);
     public void setIsPermanent(boolean status);
     public boolean getIsPermanent();
     public void setFlagLevel(int level);
+    public MarkableRelation getMarkableRelation();
+
 }
 

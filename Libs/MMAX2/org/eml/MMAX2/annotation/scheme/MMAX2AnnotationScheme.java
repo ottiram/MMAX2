@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Mark-Christoph M�ller
+ * Copyright 2021 Mark-Christoph Müller
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License. */
 
+/*
+ * Re-worked handling of casing for attribute names and values (1.15)
+ */
+
 package org.eml.MMAX2.annotation.scheme;
 
 import java.awt.Color;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Set;
@@ -52,73 +56,68 @@ import org.xml.sax.InputSource;
 public class MMAX2AnnotationScheme implements AnnotationSchemeAPI
 {        
     /** Maps IDs of the form level_n to MMAX2Attribute objects */
-    private Hashtable attributesByID;
+	/** IDs are read from the scheme file and are used as-is*/
+    private Hashtable<String, MMAX2Attribute> attributesByID;
+
     /** Maps attribute name strings to MMAX2Attribute objects */
-    private Hashtable attributesByLowerCasedAttributeName;
+    // For the purpose of identification, lower-case attributes names when used as keys
+    private Hashtable<String, MMAX2Attribute> attributesByLowerCasedAttributeName;
+    
     /** Contains MMAX2Attribute objects in the sequence they appear in the scheme xml file */
-    private ArrayList attributes;
+    private ArrayList<MMAX2Attribute> attributes;
+
     /** Maps IDs of the form value_n to IDs of the form level_m */
-    private Hashtable valueIDsToAttributeIDs;
+    private Hashtable<String, String> valueIDsToAttributeIDs;
+
     /** Reference to AttributeWindow used to display this AnnotationScheme */
     private MMAX2AttributePanel attributepanel;
-    /** List of those SchemeLevel IDs that are read only (read from .anno file ) */
-    ArrayList ReadOnlySchemeLevels;
+
+    /** List of those SchemeLevel IDs that are read only (read from .mmax file ) */
+    /** TODO Is this used anywhere? */
+    ArrayList<?> readOnlySchemeLevels;
+ 
+    // No. of attributes in this scheme
+    // TODO Is this used anywhere?
     private int size=0;
     
-    MMAX2 mmax2 = null;    
-    boolean ignoreClick = false;
-    boolean hintLocked = false;
-    String currentAttributeHintedAt = "";
-    
-    //private String levelUIMATypeMapping="";
+    MMAX2 mmax2 					= null;    
+    boolean ignoreClick 			= false;
+    boolean hintLocked 				= false;
+    String currentAttributeHintedAt = "";        
+    private String schemeFileName 	= "";
     UIMATypeMapping uimaTypeMapping;
     
-    private String schemeFileName ="";
+    boolean VERBOSE = false;
+    boolean DEBUG = false;
     
     public MMAX2AnnotationScheme (String schemefilename)
     {
-    	boolean verbose = true;
-    	
-    	String verboseVar = System.getProperty("verbose");
-    	if (verboseVar != null && verboseVar.equalsIgnoreCase("false"))
-    	{
-    		verbose = false;
-    	}
+    	try { if (System.getProperty("verbose").equalsIgnoreCase("true")) {VERBOSE = true;} }
+    	catch (java.lang.NullPointerException x) { }
 
-        schemeFileName = schemefilename;
+    	try { if (System.getProperty("debug").equalsIgnoreCase("true")) {DEBUG = true;} }
+    	catch (java.lang.NullPointerException x) { }
+    	
+    	try { schemeFileName = new File(schemefilename).getCanonicalPath(); } 
+    	catch (IOException e) {e.printStackTrace(); }
+//    	System.err.println(schemefilename + " " + fs.toURI().toString());
+    	
+//        schemeFileName = schemefilename;
         /* Create generic DOMparser */
         DOMParser parser = new DOMParser();
-        try
-        {
-            parser.setFeature("http://xml.org/sax/features/validation",false);
-        }
-        catch (org.xml.sax.SAXNotRecognizedException ex)
-        {
-            ex.printStackTrace();
-        }
-        catch (org.xml.sax.SAXNotSupportedException ex)
-        {
-            ex.printStackTrace();
-        }        
+        try													{ parser.setFeature("http://xml.org/sax/features/validation",false); }
+        catch (org.xml.sax.SAXNotRecognizedException ex) 	{ ex.printStackTrace(); }
+        catch (org.xml.sax.SAXNotSupportedException ex)  	{ ex.printStackTrace(); }        
         
-        try
-        {
-            //parser.parse(new InputSource ("FILE:" +schemefilename));
-        	parser.parse(new InputSource (new File(schemefilename).toURI().toString()));
-        }        
-        catch (org.xml.sax.SAXException exception)
-        {
-            exception.printStackTrace();
-        }
-        catch (java.io.IOException exception)
-        {
-            exception.printStackTrace();
-        }
         
-        attributesByID = new Hashtable();
-        attributes = new ArrayList();
-        attributesByLowerCasedAttributeName = new Hashtable();
-        valueIDsToAttributeIDs = new Hashtable();
+        try										{ parser.parse(new InputSource (new File(schemeFileName).toURI().toString())); }        
+        catch (org.xml.sax.SAXException ex)  	{ ex.printStackTrace(); }
+        catch (java.io.IOException ex)       	{ ex.printStackTrace(); }
+        
+        attributesByID = new Hashtable<String, MMAX2Attribute>();
+        attributes = new ArrayList<MMAX2Attribute>();
+        attributesByLowerCasedAttributeName = new Hashtable<String, MMAX2Attribute>();
+        valueIDsToAttributeIDs = new Hashtable<String, String>();
         
         int labelLength = 0;
         Document schemeDOM = parser.getDocument();        
@@ -126,275 +125,159 @@ public class MMAX2AnnotationScheme implements AnnotationSchemeAPI
         float fontSize = (float)11.0;
         
         NodeList root = schemeDOM.getElementsByTagName("annotationscheme");
-        try
-        {
-            fontSize = Float.parseFloat(root.item(0).getAttributes().getNamedItem("fontsize").getNodeValue());
-        }
-        catch (java.lang.NumberFormatException ex)
-        {
-            
-        }       
-        catch (java.lang.NullPointerException ex)
-        {
-        	
-        }
+        try 										{ fontSize = Float.parseFloat(root.item(0).getAttributes().getNamedItem("fontsize").getNodeValue());}
+        catch (java.lang.NumberFormatException ex) 	{ }       
+        catch (java.lang.NullPointerException ex)  	{ }
                  
         if (root.getLength() > 0 && root.item(0).getAttributes() != null && root.item(0).getAttributes().getNamedItem("uima_type_mapping") != null)
-        {
-        	uimaTypeMapping = new UIMATypeMapping(root.item(0).getAttributes().getNamedItem("uima_type_mapping").getNodeValue());
-        	System.err.println(uimaTypeMapping.toString());
-        }
-        else
-        {
-        	uimaTypeMapping = new UIMATypeMapping("","");
-        }
+        { uimaTypeMapping = new UIMATypeMapping(root.item(0).getAttributes().getNamedItem("uima_type_mapping").getNodeValue());}
+        else 
+        { uimaTypeMapping = new UIMATypeMapping("","");}
         
-        /* Get all level elements from dom */
-        NodeList allAttributes = schemeDOM.getElementsByTagName("attribute");        
+        /* Get all level element nodes from scheme file dom */
+        NodeList allAttributeNodes = schemeDOM.getElementsByTagName("attribute");        
         
         MMAX2Attribute currentAttribute = null;
         Node currentNode = null;
         
         // Determine max. attribute name length in entire AnnotationScheme
-        for (int z=0;z<allAttributes.getLength();z++)
+        for (int z=0;z<allAttributeNodes.getLength();z++)
         {            
-            currentNode = allAttributes.item(z);
+            currentNode = allAttributeNodes.item(z);
             String currentNodeName = currentNode.getAttributes().getNamedItem("name").getNodeValue();
             if (currentNodeName.length() >= labelLength) labelLength = currentNodeName.length();
         }       
         
+        // This is for *attribute-level* tool tips and hints
         String toolTipText = "";
-        for (int z=0;z<allAttributes.getLength();z++)
+        for (int z=0;z<allAttributeNodes.getLength();z++)
         {
-            currentNode = allAttributes.item(z);
-            try
-            {
-                toolTipText = currentNode.getAttributes().getNamedItem("text").getNodeValue();
-            }
-            catch (java.lang.NullPointerException ex)
-            {
-                toolTipText = "";
-            }
+            currentNode = allAttributeNodes.item(z);
+            try											{ toolTipText = currentNode.getAttributes().getNamedItem("text").getNodeValue(); }
+            catch (java.lang.NullPointerException ex) 	{ toolTipText = "";}
             
             String descriptionFileName = "";
-            try
-            {
-                descriptionFileName = currentNode.getAttributes().getNamedItem("description").getNodeValue();
-            }
-            catch (java.lang.NullPointerException ex)            
-            {
-            	
-            }
+            try 										{descriptionFileName = currentNode.getAttributes().getNamedItem("description").getNodeValue();}
+            catch (java.lang.NullPointerException ex)	{ }
             
             String hintText="";
-            if (descriptionFileName.equals("")==false)
-            {
-                hintText = readHTMLFromFile(schemeFileName.substring(0,schemeFileName.lastIndexOf(File.separator)+1)+descriptionFileName);
-            }            
+            if (descriptionFileName.equals("")==false) {hintText = readHTMLFromFile(schemeFileName.substring(0,schemeFileName.lastIndexOf(File.separator)+1)+descriptionFileName);}            
             
             String type = "";
             int typeInt = -1;
-            try
-            {
-                /* Determine type of level */                
-                    type = currentNode.getAttributes().getNamedItem("type").getNodeValue().trim();
-            }
-            catch (java.lang.NullPointerException ex)
-            {
-                /* Use type 'nominal_list' as default */
-                type = "nominal_list";
-            }
-            
-            type=type.toLowerCase();
-            
+            try 										{ type = currentNode.getAttributes().getNamedItem("type").getNodeValue().trim(); }
+            catch (java.lang.NullPointerException ex)	{ type = "nominal_list";/* Use type 'nominal_list' as default */}
+                       
             String attributeToShowInPointerFlag="";
-            
-            if (type.equalsIgnoreCase("nominal_button")) typeInt = AttributeAPI.NOMINAL_BUTTON;
-            else if (type.equalsIgnoreCase("nominal_list")) typeInt = AttributeAPI.NOMINAL_LIST;
-            else if (type.equalsIgnoreCase("freetext")) typeInt = AttributeAPI.FREETEXT;
-            else if (type.equalsIgnoreCase("markable_set")) typeInt = AttributeAPI.MARKABLE_SET;
-            else if (type.equalsIgnoreCase("markable_pointer")) typeInt = AttributeAPI.MARKABLE_POINTER;
-            
-            
+            type=type.toLowerCase();            
+            if (type.equals("nominal_button")) typeInt = AttributeAPI.NOMINAL_BUTTON;
+            else if (type.equals("nominal_list")) typeInt = AttributeAPI.NOMINAL_LIST;
+            else if (type.equals("freetext")) typeInt = AttributeAPI.FREETEXT;
+            else if (type.equals("markable_set")) typeInt = AttributeAPI.MARKABLE_SET;
+            else if (type.equals("markable_pointer")) typeInt = AttributeAPI.MARKABLE_POINTER;                        
             else if (type.startsWith("markable_pointer:"))
             {
+            	// Todo: Support more / other flags here
                 typeInt = AttributeAPI.MARKABLE_POINTER;
                 attributeToShowInPointerFlag=type.substring(type.indexOf(":")+1);
             }
             
             int lineWidth = 2;
-            try
-            {
-                lineWidth = Integer.parseInt(currentNode.getAttributes().getNamedItem("width").getNodeValue());
-            }
-            catch (java.lang.Exception ex)
-            {
-                //
-            }
+            try								{ lineWidth = Integer.parseInt(currentNode.getAttributes().getNamedItem("width").getNodeValue()); }
+            catch (java.lang.Exception ex)	{ }
             
             Color color = Color.black;
-            try
-            {
-                color = MMAX2Utils.getColorByName((String)currentNode.getAttributes().getNamedItem("color").getNodeValue());
-            }
-            catch (java.lang.Exception ex)
-            {
-                //
-            }
+            try								{ color = MMAX2Utils.getColorByName((String)currentNode.getAttributes().getNamedItem("color").getNodeValue()); }
+            catch (java.lang.Exception ex)	{ }
 
+//            int alpha = 0;
+//            try								{ alpha =Integer.parseInt(currentNode.getAttributes().getNamedItem("alpha").getNodeValue()); }
+//            catch (java.lang.Exception ex)	{ }
+//
+//            if (alpha >0)
+//            {
+//                color = new Color(color.getRed(),color.getGreen(),color.getBlue(),alpha);
+//            }
+            
             String lineStyle="straight";
             int lineStyleInt=MMAX2Constants.STRAIGHT;
-            try
-            {
-                lineStyle = (String) currentNode.getAttributes().getNamedItem("style").getNodeValue();
-            }
-            catch (java.lang.Exception ex)
-            {
-                //
-            }
+            try								{ lineStyle = (String) currentNode.getAttributes().getNamedItem("style").getNodeValue().toLowerCase(); }
+            catch (java.lang.Exception ex)	{ }
             
-            if (lineStyle.equalsIgnoreCase("straight"))
-            {
-                lineStyleInt = MMAX2Constants.STRAIGHT;
-            }
-            else if (lineStyle.equalsIgnoreCase("lcurve"))
-            {
-                lineStyleInt = MMAX2Constants.LCURVE;
-            }
-            else if (lineStyle.equalsIgnoreCase("rcurve"))
-            {
-                lineStyleInt = MMAX2Constants.RCURVE;
-            }
-            else if (lineStyle.equalsIgnoreCase("xcurve"))
-            {
-                lineStyleInt = MMAX2Constants.XCURVE;
-            }
-            else if (lineStyle.equalsIgnoreCase("smartcurve"))
-            {
-                lineStyleInt = MMAX2Constants.SMARTCURVE;
-            }
+            if      (lineStyle.equals("straight")) 		{ lineStyleInt = MMAX2Constants.STRAIGHT; }
+            else if (lineStyle.equals("lcurve")) 		{ lineStyleInt = MMAX2Constants.LCURVE; }
+            else if (lineStyle.equals("rcurve")) 		{ lineStyleInt = MMAX2Constants.RCURVE; }
+            else if (lineStyle.equals("xcurve")) 		{ lineStyleInt = MMAX2Constants.XCURVE; }
+            else if (lineStyle.equals("smartcurve"))	{ lineStyleInt = MMAX2Constants.SMARTCURVE; }
             
+            // maxSize is the max. number of targets for a pointer attribute
             int maxSize = -1;
-            try
-            {
-                maxSize = Integer.parseInt(currentNode.getAttributes().getNamedItem("max_size").getNodeValue());
-            }
-            catch (java.lang.Exception ex)
-            {
-                //
-            }
+            try 							{ maxSize = Integer.parseInt(currentNode.getAttributes().getNamedItem("max_size").getNodeValue()); }
+            catch (java.lang.Exception ex)	{ }
             
             String targetDomain = "";
-            try
-            {
-                targetDomain = (String) currentNode.getAttributes().getNamedItem("target_domain").getNodeValue();
-            }
-            catch (java.lang.Exception ex)
-            {
-                //
-            }
+            try 							{ targetDomain = (String) currentNode.getAttributes().getNamedItem("target_domain").getNodeValue(); }
+            catch (java.lang.Exception ex)  { }
 
             boolean dashed=false;
-            String dashAttrib="false";
-            try
-            {
-                dashAttrib = (String) currentNode.getAttributes().getNamedItem("dashed").getNodeValue();
-            }
-            catch (java.lang.Exception ex)
-            {
-                dashAttrib="false";
-            }
-            if (dashAttrib.equals("false")==false)
-            {
-                dashed=true;
-            }
+            String dashAttrib;
+            try								{ dashAttrib = (String) currentNode.getAttributes().getNamedItem("dashed").getNodeValue(); }
+            catch (java.lang.Exception ex)	{ dashAttrib = "false"; }
+            
+            if (dashAttrib.equalsIgnoreCase("true")) { dashed=true; }
             
             String add_to_markableset_instruction = "ADD TO MARKABLE SET";
-            try
-            {
-                add_to_markableset_instruction = (String) currentNode.getAttributes().getNamedItem("add_to_markableset_text").getNodeValue();
-            }
-            catch (java.lang.Exception ex)
-            {
-                //
-            }
+            try 							{ add_to_markableset_instruction = (String) currentNode.getAttributes().getNamedItem("add_to_markableset_text").getNodeValue(); }
+            catch (java.lang.Exception ex)	{ }
 
             String remove_from_markableset_instruction = "REMOVE FROM MARKABLE SET";
-            try
-            {
-                remove_from_markableset_instruction = (String) currentNode.getAttributes().getNamedItem("remove_from_markableset_text").getNodeValue();
-            }
-            catch (java.lang.Exception ex)
-            {
-                //
-            }
+            try								{ remove_from_markableset_instruction = (String) currentNode.getAttributes().getNamedItem("remove_from_markableset_text").getNodeValue(); }
+            catch (java.lang.Exception ex)	{ }
 
             String adopt_into_markableset_instruction = "ADOPT INTO MARKABLE SET";
-            try
-            {
-                adopt_into_markableset_instruction = (String) currentNode.getAttributes().getNamedItem("adopt_into_markableset_text").getNodeValue();
-            }
-            catch (java.lang.Exception ex)
-            {
-                //
-            }
+            try 							{ adopt_into_markableset_instruction = (String) currentNode.getAttributes().getNamedItem("adopt_into_markableset_text").getNodeValue(); }
+            catch (java.lang.Exception ex)	{ }
             
             String merge_into_markableset_instruction = "MERGE INTO MARKABLE SET";
-            try
-            {
-                merge_into_markableset_instruction = (String) currentNode.getAttributes().getNamedItem("merge_into_markableset_text").getNodeValue();
-            }
-            catch (java.lang.Exception ex)
-            {
-                //
-            }
+            try								{ merge_into_markableset_instruction = (String) currentNode.getAttributes().getNamedItem("merge_into_markableset_text").getNodeValue(); }
+            catch (java.lang.Exception ex)	{ }
             
             String point_to_markable_instruction = "POINT TO MARKABLE";
-            try
-            {
-                point_to_markable_instruction = (String) currentNode.getAttributes().getNamedItem("point_to_markable_text").getNodeValue();
-            }
-            catch (java.lang.Exception ex)
-            {
-                //
-            }
+            try								{ point_to_markable_instruction = (String) currentNode.getAttributes().getNamedItem("point_to_markable_text").getNodeValue(); }
+            catch (java.lang.Exception ex) 	{ }
 
             String remove_pointer_to_markable_instruction = "REMOVE POINTER TO MARKABLE";
-            try
-            {
-                remove_pointer_to_markable_instruction = (String) currentNode.getAttributes().getNamedItem("remove_pointer_to_markable_text").getNodeValue();
-            }
-            catch (java.lang.Exception ex)
-            {
-                //
-            }
+            try								{ remove_pointer_to_markable_instruction = (String) currentNode.getAttributes().getNamedItem("remove_pointer_to_markable_text").getNodeValue(); }
+            catch (java.lang.Exception ex)	{ }
+            
+            UIMATypeMapping currentAttributeUIMAMapping = null;           
+            if (currentNode.getAttributes().getNamedItem("uima_type_mapping") != null) 	{ currentAttributeUIMAMapping = new UIMATypeMapping(currentNode.getAttributes().getNamedItem("uima_type_mapping").getNodeValue()); }
+            else 																		{ currentAttributeUIMAMapping = new UIMATypeMapping("",""); }                       
 
             
-            UIMATypeMapping currentAttributeMapping = null;
+            /* Generate one MMAX2Attribute object for each attribute read from scheme file dom*/
+            /* name for this attribute is taken directly from scheme file DOM, id is set to lower-case to be robust when using 'next' attributes.*/            
+            currentAttribute = new MMAX2Attribute(	currentNode.getAttributes().getNamedItem("id").getNodeValue().toLowerCase(),
+            										currentNode.getAttributes().getNamedItem("name").getNodeValue(),
+            										typeInt,currentNode.getChildNodes(), this, 
+            										labelLength, toolTipText, hintText, lineWidth, color, lineStyleInt, 
+            										maxSize, targetDomain, 
+            										add_to_markableset_instruction, remove_from_markableset_instruction, 
+            										adopt_into_markableset_instruction, merge_into_markableset_instruction, 
+            										point_to_markable_instruction, remove_pointer_to_markable_instruction,
+            										fontSize, dashed, attributeToShowInPointerFlag, currentAttributeUIMAMapping);
             
-            if (currentNode.getAttributes().getNamedItem("uima_type_mapping") != null)
-            {
-            	currentAttributeMapping = new UIMATypeMapping(currentNode.getAttributes().getNamedItem("uima_type_mapping").getNodeValue());
-            	System.err.println(currentAttributeMapping.toString());
-            }
-            else
-            {
-            	currentAttributeMapping = new UIMATypeMapping("","");
-            }                       
-            
-            /* Generate one MMAX2Attribute object for each */
-            currentAttribute = new MMAX2Attribute(currentNode.getAttributes().getNamedItem("id").getNodeValue(),currentNode.getAttributes().getNamedItem("name").getNodeValue(),typeInt,currentNode.getChildNodes(), this, labelLength, toolTipText, hintText, lineWidth, color, lineStyleInt, maxSize, targetDomain, add_to_markableset_instruction, remove_from_markableset_instruction, adopt_into_markableset_instruction, merge_into_markableset_instruction,point_to_markable_instruction, remove_pointer_to_markable_instruction,fontSize,dashed,attributeToShowInPointerFlag,currentAttributeMapping);
-            
-            /* Map currentLevel to its ID */
+            /* Map current attribute to its ID, which is sure to be lower-cased  */            
             attributesByID.put(currentAttribute.getID(), currentAttribute);
             
-            /* Map currentLevel to its (lower-cased) attribute name */
+            /* Map current attribute to its (lower-cased) attribute name */
+            /* LC is correct here because the name is used as hash key only. */
             attributesByLowerCasedAttributeName.put(currentNode.getAttributes().getNamedItem("name").getNodeValue().toLowerCase(),currentAttribute);
             attributes.add(currentAttribute);
             currentAttribute = null;
             size++;
         }
-        
+                
         for (int z=0;z<attributes.size();z++)
         {
             currentAttribute = (MMAX2Attribute) attributes.get(z);           
@@ -408,10 +291,33 @@ public class MMAX2AnnotationScheme implements AnnotationSchemeAPI
         attributepanel = new MMAX2AttributePanel(this);
         attributepanel.create();            
     }
+         
+    public boolean isVerbose()
+    {
+    	return VERBOSE;
+    }
+
+    public boolean isDebug()
+    {
+    	return DEBUG;
+    }
     
+    /* This returns the unmodified name if no attribute of that name exists. */ 
+    public String normalizeAttributeName(String name) {
+    	//System.err.println("Java "+name.toLowerCase());
+    	if (attributesByLowerCasedAttributeName.containsKey(name.toLowerCase()))
+    	{
+    		// System.err.println("Found "+name.toLowerCase());
+    		return ((MMAX2Attribute)attributesByLowerCasedAttributeName.get(name.toLowerCase())).getDisplayName();
+    	}
+    	//else System.err.println("Not found "+name.toLowerCase());
+    		
+    	return name;
+    }
+	    
     public UIMATypeMapping[] getAllUIMAAttributeMappings()
     {
-    	ArrayList tempResult = new ArrayList();
+    	ArrayList<UIMATypeMapping> tempResult = new ArrayList<UIMATypeMapping>();
     	// Iterate over all attributes defined for this scheme (i.e. level)
     	for (int z=0;z<attributes.size();z++)
     	{
@@ -447,19 +353,10 @@ public class MMAX2AnnotationScheme implements AnnotationSchemeAPI
                 result=result+"\n"+currentLine;
             }                        
         }
-        catch (java.io.IOException ex)
-        {
-            ex.printStackTrace();
-        }
+        catch (java.io.IOException ex)	{ ex.printStackTrace(); }
 
-        try
-        {
-            abbrevReader.close();
-        }
-        catch (java.lang.Exception ex)
-        {
-            
-        }
+        try								{ abbrevReader.close(); }
+        catch (java.lang.Exception ex) 	{ }
         return result;
     }
     
@@ -485,15 +382,15 @@ public class MMAX2AnnotationScheme implements AnnotationSchemeAPI
             if (hintLocked)
             {
                 // The currently displayed hint is locked
+            	// What was 'locking' again ... ???  :-| 
                 // So a normal hint should not be displayed unless it locks as well
                 if (_lock)
                 {
                     // The new hint is to be locked
                     // If the new one is the same as the currentlocked one, just unlock
-                    if (_att.equals(currentAttributeHintedAt))
-                    {
-                        hintLocked = false;
-                    }
+                    //if (_att.equals(currentAttributeHintedAt))
+                	// For 1.15
+                    if (_att.equalsIgnoreCase(currentAttributeHintedAt)) { hintLocked = false; }
                     else
                     {
                         // We want to lock another one
@@ -535,18 +432,12 @@ public class MMAX2AnnotationScheme implements AnnotationSchemeAPI
 
     public final void annotationHintToFront()
     {
-        if (mmax2 != null)
-        {
-            mmax2.annotationHintToFront();
-        }
+        if (mmax2 != null) { mmax2.annotationHintToFront(); }
     }
 
     public final void annotationHintToBack()
     {
-        if (mmax2 != null)
-        {
-            mmax2.annotationHintToBack();
-        }
+        if (mmax2 != null) { mmax2.annotationHintToBack(); }
     }
     
 ///////////      
@@ -558,34 +449,25 @@ public class MMAX2AnnotationScheme implements AnnotationSchemeAPI
         for (int p=0;p<attributes.size();p++)
         {
             currentAttribute = (MMAX2Attribute) attributes.get(p);
-            if (currentAttribute.getType()==type)
-            {
-                tempresult.add(currentAttribute);
-            }
+            if (currentAttribute.getType()==type) { tempresult.add(currentAttribute); }
         }
         MMAX2Attribute realresult[] = new MMAX2Attribute[tempresult.size()];
-        for (int z=0;z<tempresult.size();z++)
-        {
-            realresult[z] = (MMAX2Attribute) tempresult.get(z);
-        }
+        for (int z=0;z<tempresult.size();z++) { realresult[z] = (MMAX2Attribute) tempresult.get(z); }
         return realresult;        
     }
 
     public MMAX2Attribute getUniqueAttributeByType(int type)
     {
+    	// 'unique' means 'just return the first one' ...
         MMAX2Attribute currentAttribute; 
         for (int p=0;p<attributes.size();p++)
         {
             currentAttribute = (MMAX2Attribute) attributes.get(p);
-            if (currentAttribute.getType()==type)
-            {
-                return currentAttribute;
-            }
+            if (currentAttribute.getType()==type) { return currentAttribute; }
         }
         return null;
     }
-    
-    
+        
     
     public MMAX2Attribute[] getAttributesByType(int type1, int type2)
     {
@@ -629,7 +511,7 @@ public class MMAX2AnnotationScheme implements AnnotationSchemeAPI
         for (int p=0;p<attributes.size();p++)
         {
             currentAttribute = (MMAX2Attribute) attributes.get(p);
-            if (currentAttribute.getDisplayAttributeName().toLowerCase().matches(nameRegExp))
+            if (currentAttribute.getDisplayName().toLowerCase().matches(nameRegExp))
             {
             	tempResult.add(currentAttribute);
             }
@@ -648,7 +530,7 @@ public class MMAX2AnnotationScheme implements AnnotationSchemeAPI
         for (int p=0;p<attributes.size();p++)
         {
             currentAttribute = (MMAX2Attribute) attributes.get(p);
-            if (currentAttribute.getDisplayAttributeName().toLowerCase().matches(nameRegExp))
+            if (currentAttribute.getDisplayName().toLowerCase().matches(nameRegExp))
             {
             	return currentAttribute;
             }
@@ -664,7 +546,7 @@ public class MMAX2AnnotationScheme implements AnnotationSchemeAPI
         MMAX2Attribute[] temp = getAttributesByType(type);
         for (int b=0;b<temp.length;b++)
         {
-            if (temp[b].getDisplayAttributeName().toLowerCase().matches(name))
+            if (temp[b].getDisplayName().toLowerCase().matches(name))
             {
             	tempResult.add(temp[b]);
             }
@@ -682,7 +564,7 @@ public class MMAX2AnnotationScheme implements AnnotationSchemeAPI
         MMAX2Attribute[] temp = getAttributesByType(type);
         for (int b=0;b<temp.length;b++)
         {
-            if (temp[b].getDisplayAttributeName().toLowerCase().matches(name))
+            if (temp[b].getDisplayName().toLowerCase().matches(name))
             {
             	return temp[b];
             }
@@ -697,7 +579,7 @@ public class MMAX2AnnotationScheme implements AnnotationSchemeAPI
         MMAX2Attribute[] temp = getAttributesByType(type1, type2);
         for (int b=0;b<temp.length;b++)
         {
-            if (temp[b].getDisplayAttributeName().toLowerCase().matches(name))
+            if (temp[b].getDisplayName().toLowerCase().matches(name))
             {
             	tempResult.add(temp[b]);
             }
@@ -715,7 +597,7 @@ public class MMAX2AnnotationScheme implements AnnotationSchemeAPI
         MMAX2Attribute[] temp = getAttributesByType(type1, type2);
         for (int b=0;b<temp.length;b++)
         {
-            if (temp[b].getDisplayAttributeName().toLowerCase().matches(name))
+            if (temp[b].getDisplayName().toLowerCase().matches(name))
             {
             	return temp[b];
             }
@@ -734,18 +616,17 @@ public class MMAX2AnnotationScheme implements AnnotationSchemeAPI
     
     /** This method produces an ArrayList of those MMAX2Attributes in annotation scheme order that do not depend
         on any other attribute. Independence is determined by checking if the attributes's dependsOn list is empty. */
-    public final ArrayList getIndependentAttributes(boolean enable)
+    public final ArrayList<MMAX2Attribute> getIndependentAttributes(boolean enable)
     {
         // Create list to accept result
-        ArrayList tempresult = new ArrayList();       
+        ArrayList<MMAX2Attribute> tempresult = new ArrayList<MMAX2Attribute>();       
         MMAX2Attribute currentAttribute=null; 
         
         // Iterate over all Attributes defined in this scheme, in annotation scheme order
         for (int p=0;p<attributes.size();p++)
         {
             // Get current attribute
-            currentAttribute = (MMAX2Attribute) attributes.get(p);
-            
+            currentAttribute = (MMAX2Attribute) attributes.get(p);            
             /* Reset to Default (this will also set 'empty' for relations now!)*/
             currentAttribute.toDefault();
             
@@ -828,7 +709,8 @@ public class MMAX2AnnotationScheme implements AnnotationSchemeAPI
                 MMAX2Attribute currentSchemeLevel = (MMAX2Attribute) requestedAttributes[o];
                 // Get current markable value from Markable's attribute collection (may be different 
                 // from Attribute window!!)
-                String currentMarkableValue = attributepanel.currentMarkable.getAttributeValue(currentSchemeLevel.getLowerCasedAttributeName());
+                // For 1.15: This now returns display attributename
+                String currentMarkableValue = attributepanel.currentMarkable.getAttributeValue(currentSchemeLevel.getDisplayName());
                 
                 if (currentMarkableValue != null && currentMarkableValue.equals("")==false)
                 {
@@ -876,10 +758,10 @@ public class MMAX2AnnotationScheme implements AnnotationSchemeAPI
             {                
                 if (((MMAX2Attribute) removedAttributes[p]).getIsFrozen())
                 {
-                    System.err.println("Frozen: "+((MMAX2Attribute) removedAttributes[p]).getDisplayAttributeName());
-                    if (attributepanel.keepables.contains(((MMAX2Attribute) removedAttributes[p]).getLowerCasedAttributeName())==false)
+                    System.err.println("Frozen: "+((MMAX2Attribute) removedAttributes[p]).getDisplayName());
+                    if (attributepanel.keepables.contains(((MMAX2Attribute) removedAttributes[p]).getDisplayName())==false)
                     {
-                        attributepanel.keepables.add(((MMAX2Attribute) removedAttributes[p]).getLowerCasedAttributeName());
+                        attributepanel.keepables.add(((MMAX2Attribute) removedAttributes[p]).getDisplayName());
                     }
                     System.err.println("Keeping in keepables. Size:"+attributepanel.keepables.size());
                 }
@@ -892,7 +774,7 @@ public class MMAX2AnnotationScheme implements AnnotationSchemeAPI
             for (int o=0;o<requestedAttributes.length;o++)
             {
                 MMAX2Attribute currentSchemeLevel = (MMAX2Attribute) requestedAttributes[o];
-                String currentMarkableValue = attributepanel.currentMarkable.getAttributeValue(currentSchemeLevel.getLowerCasedAttributeName());
+                String currentMarkableValue = attributepanel.currentMarkable.getAttributeValue(currentSchemeLevel.getDisplayName());
                 if (currentMarkableValue != null && currentMarkableValue.equals("")==false) // && currentMarkableValue.equalsIgnoreCase(this._attributeWindow.currentMarkable.getDefaultValue())==false)
                 {
                     //hasValue
@@ -1024,10 +906,10 @@ public class MMAX2AnnotationScheme implements AnnotationSchemeAPI
                 }                
                 if (currentRemovedLevel.getIsFrozen()) 
                 {
-                    System.err.println("Frozen: "+currentRemovedLevel.getDisplayAttributeName());
-                    if (attributepanel.keepables.contains(currentRemovedLevel.getLowerCasedAttributeName())==false) 
+                    System.err.println("Frozen: "+currentRemovedLevel.getDisplayName());
+                    if (attributepanel.keepables.contains(currentRemovedLevel.getDisplayName())==false) 
                     {
-                        attributepanel.keepables.add(currentRemovedLevel.getLowerCasedAttributeName());
+                        attributepanel.keepables.add(currentRemovedLevel.getDisplayName());
                         System.err.println("Keeping in keepables. Size:"+attributepanel.keepables.size());
                     }
                 }                
@@ -1046,11 +928,15 @@ public class MMAX2AnnotationScheme implements AnnotationSchemeAPI
                     currentRemovedLevel = removedLevels[u];
                 
                     /* Get Attribute on current requestedLevel */
-                    currentRequestedAttribute = currentRequestedLevel.getLowerCasedAttributeName();
+                    // This returns the cased name now (=DisplayName)
+                    currentRequestedAttribute = currentRequestedLevel.getDisplayName();
                     /* Get Attribute on current removedLevel */
-                    currentRemovedAttribute = currentRemovedLevel.getLowerCasedAttributeName();
+                    // This returns the cased name now
+                    currentRemovedAttribute = currentRemovedLevel.getDisplayName();
                                                                     
-                    if(currentRequestedAttribute.equals(currentRemovedAttribute))
+                    //if(currentRequestedAttribute.equals(currentRemovedAttribute))
+                    // For 1.15
+                    if(currentRequestedAttribute.equalsIgnoreCase(currentRemovedAttribute))
                     {
                         /* We are about to remove a level which has the attribute name of the current requested one, but is NOT identical. */
                         /* Check whether its value can be copied to requestedLevel */
@@ -1097,6 +983,7 @@ public class MMAX2AnnotationScheme implements AnnotationSchemeAPI
             ((MMAX2Attribute) this.attributes.get(z)).setIsFrozen(false,"");
         }               
     }
+    
     /** This method resets the AttributeWindow to the initial state as defined in this AnnotationScheme */
     public void reset()
     {
@@ -1151,21 +1038,21 @@ public class MMAX2AnnotationScheme implements AnnotationSchemeAPI
     }
     
     /** This method returns an array of MMAX2Attribute objects reflecting the attributes of Markable markable.
-        If Markable does not have any attributes, or an error occured, only independent Attributes with default 
+        If Markable does not have any attributes, or an error occurred, only independent Attributes with default 
         values are returned. This method handles branching independent attributes as well, and sets all defaults! 
         This method is the central instance for enforcing annotation scheme constraints! */
     public MMAX2Attribute[] getAttributes(Markable markable)
     {
         /* Copy attributes of current Markable. Processed attributes are incrementally removed from this list. */
         /* This contains ALL attributes found in the XML representation, incl. relations. */
-        HashMap tempattribs = new HashMap(markable.getAttributes());        
+        HashMap<String,String> tempattribs = new HashMap<String, String>(markable.getAttributes());        
         
         MMAX2Attribute currentAttribute = null;
         String currentAttributeString = "";
         String currentAttributeValue = "";
         
         // Get list of independent attributes in scheme order
-        ArrayList independentAttributesAsList = getIndependentAttributes(true);        
+        ArrayList<MMAX2Attribute> independentAttributesAsList = getIndependentAttributes(true);        
         // The list now contains all independent attributes, and nothing else
         // All other attributes will be added to this list!
         
@@ -1177,11 +1064,13 @@ public class MMAX2AnnotationScheme implements AnnotationSchemeAPI
             currentAttribute = (MMAX2Attribute)independentAttributesAsList.get(z);
                         
             // Get matchable name of its attribute
-            currentAttributeString = currentAttribute.getLowerCasedAttributeName();     
+            currentAttributeString = currentAttribute.getDisplayName();
             
-            // Get value of current attribute from Markable to be displayed. This will work because markable attributes and values are all lower case
+//            System.err.println(markable.getAttributes());
+            // Get value of current attribute from Markable to be displayed.
             currentAttributeValue = markable.getAttributeValue(currentAttributeString);
             
+//            System.err.println("Default -->"+currentAttributeString+" "+currentAttributeValue);
             // Null will be returned if the attribute does not exist on the XML markable yet
             if (currentAttributeValue == null) 
             {
@@ -1214,13 +1103,14 @@ public class MMAX2AnnotationScheme implements AnnotationSchemeAPI
                 // This means that Markable had a non-null value to which the attribute could _not_ be set !!
                 // Note: This can never fail for relations, because relations cannot have value constraints!   
                 // It can neither fail for freetext attributes
+
                 // This can only happen if the markable was never selected before and received an invalid
                 // value externally, or if it was selected earlier, but the user prompted to keep the invalid
                 // value. At any rate, invalid values can ONLY be introduced externally!
                 String message ="";
                 if (currentAttribute.getIsReadOnly() == false)
                 {            
-                    message = "Error on level '"+markable.getMarkableLevelName()+"': Value '"+currentAttributeValue.toLowerCase() +"' is undefined for attribute '"+currentAttribute.getDisplayAttributeName()+"'!";
+                    message = "Error on level '"+markable.getMarkableLevelName()+"': Value '"+currentAttributeValue.toLowerCase() +"' is undefined for attribute '"+currentAttribute.getDisplayName()+"'!";
                     message = message + "\nDetails:\nString: "+markable.toString()+"\nSpan: "+MarkableHelper.getSpan(markable)+"\nFile: "+markable.getMarkableLevel().getMarkableFileName();
                     message = message + "\nIt is recommended that you check your annotation!";
                     message = message + "\n\nSelect 'Overwrite' to discard the invalid value!";
@@ -1244,7 +1134,7 @@ public class MMAX2AnnotationScheme implements AnnotationSchemeAPI
                 else
                 {
                     // Read-only
-                    message = "Error on read-only level '"+markable.getMarkableLevelName()+"': Value '"+currentAttributeValue.toLowerCase() +"' is undefined for attribute '"+currentAttribute.getDisplayAttributeName()+"'!";
+                    message = "Error on read-only level '"+markable.getMarkableLevelName()+"': Value '"+currentAttributeValue.toLowerCase() +"' is undefined for attribute '"+currentAttribute.getDisplayName()+"'!";
                     message = message + "\nDetails:\nString: "+markable.toString()+"\nSpan: "+MarkableHelper.getSpan(markable)+"\nFile: "+markable.getMarkableLevel().getMarkableFileName();                    
                     message = message + "\nIt is recommended that you check your annotation!";
                     Object[] options = { "Keep invalid value" };
@@ -1254,6 +1144,7 @@ public class MMAX2AnnotationScheme implements AnnotationSchemeAPI
                 }
             } // setSelectedValue failed
             
+                        
             // Now, current attribute in independentAttributesAsList is either set correctly, 
             // or to default if above failed, or frozen
             // From the markables's attributes, remove the one just processed
@@ -1264,7 +1155,7 @@ public class MMAX2AnnotationScheme implements AnnotationSchemeAPI
             {
                 // The current initial attribute does point to some other attributes
                 // Get all of them as a list
-                ArrayList addees = new ArrayList(java.util.Arrays.asList(currentAttribute.getNextAttributes(false)));
+                ArrayList<MMAX2Attribute> addees = new ArrayList<MMAX2Attribute>(java.util.Arrays.asList(currentAttribute.getNextAttributes(false)));
                 // Iterate over list of dependent attributes
                 for (int t=0;t<addees.size();t++)                
                 {
@@ -1281,24 +1172,23 @@ public class MMAX2AnnotationScheme implements AnnotationSchemeAPI
             }// the current attribute is not branching or does not point to anything in its current value            
         }// for z; end iteration over all initial attribute
         
-        // At this point, all initial Attributes are processed, and contained in 
-        // initialAttributesAsList
+        // At this point, all initial Attributes are processed, and contained in initialAttributesAsList
         
         // Convert into array
         MMAX2Attribute[] result = (MMAX2Attribute[]) independentAttributesAsList.toArray(new MMAX2Attribute[independentAttributesAsList.size()]);
         
         // Now tempattribs, the hash with all attributes carried by the markable, should be empty
-        Iterator allAttributes = ((Set)tempattribs.keySet()).iterator();        
-        String currentValue = "";
+        Iterator<String> remainingAttributes = ((Set<String>)tempattribs.keySet()).iterator();        
         String extraAttributesMessage = "";
         
         /* Iterate over all remaining attributes */
-        while (allAttributes.hasNext())
+        while (remainingAttributes.hasNext())
         {                
             // Get name of current remaining attribute
-            currentAttributeString = (String) allAttributes.next();
+            currentAttributeString = (String) remainingAttributes.next();
             // Get attribute itself
-            MMAX2Attribute currentMMAX2Attribute = (MMAX2Attribute) attributesByLowerCasedAttributeName.get(currentAttributeString);
+            //MMAX2Attribute currentMMAX2Attribute = (MMAX2Attribute) attributesByLowerCasedAttributeName.get(currentAttributeString);
+            MMAX2Attribute currentMMAX2Attribute = (MMAX2Attribute) attributesByLowerCasedAttributeName.get(currentAttributeString.toLowerCase());
             // Get type of current attribute
             int currentAttributeType = -1;
             // But only if one was found
@@ -1307,14 +1197,13 @@ public class MMAX2AnnotationScheme implements AnnotationSchemeAPI
                 currentAttributeType = currentMMAX2Attribute.getType();
             }
             
-            if ((tempattribs.get(currentAttributeString))==null ||
-                 tempattribs.get(currentAttributeString).equals(""))
+            if ((tempattribs.get(currentAttributeString))==null || tempattribs.get(currentAttributeString).equals(""))
             {
                 // If the value the markable has is empty, simply remove without asking
                 markable.getAttributes().remove(currentAttributeString);
                 continue;
             }
-            else if (tempattribs.get(currentAttributeString).equals("empty"))
+            else if (tempattribs.get(currentAttributeString).equalsIgnoreCase("empty"))
             {
                 // The value is 'empty', which is special for relation attributes
                 if (currentAttributeType == AttributeAPI.MARKABLE_POINTER || currentAttributeType == AttributeAPI.MARKABLE_SET)
@@ -1412,13 +1301,25 @@ public class MMAX2AnnotationScheme implements AnnotationSchemeAPI
         {
             extraAttributesMessage = "The following undefined attributes were\nfound on the current Markable:\n"+extraAttributesMessage;
             JOptionPane.showMessageDialog(null,extraAttributesMessage,"MMAX2: Potential annotation inconsistency!",JOptionPane.WARNING_MESSAGE);
+            // 1.15 Fix blank attribute panel after this message
+            attributepanel.rebuild();
         }
         return result; 
     }   
     
     public boolean isDefined(String attributename)
     { 
-        return this.attributesByLowerCasedAttributeName.containsKey(attributename);
+    	if (attributename.equalsIgnoreCase("span") == false && 
+    	    attributename.equalsIgnoreCase("id") == false && 
+    	    attributename.equalsIgnoreCase("mmax_level") == false)
+    	{
+        	// if (isDebug()) { System.err.println("isDefined() ? "+attributename);}
+    		return this.attributesByLowerCasedAttributeName.containsKey(attributename.toLowerCase());
+    	}
+    	else
+    	{
+    		return true;
+    	}
     }
         
     public int getAttributeTypeByAttributeName(String attribute)
@@ -1449,10 +1350,10 @@ public class MMAX2AnnotationScheme implements AnnotationSchemeAPI
         
     }
     
-    public ArrayList getAllAttributeNames()
+    public ArrayList<String> getAllAttributeNames()
     {
-        ArrayList resultlist = new ArrayList();
-        Enumeration allAttribs = attributesByLowerCasedAttributeName.keys();
+        ArrayList<String> resultlist = new ArrayList<String>();
+        Enumeration<String> allAttribs = attributesByLowerCasedAttributeName.keys();
         while (allAttribs.hasMoreElements())
         {
             resultlist.add((String) allAttribs.nextElement());
@@ -1468,7 +1369,7 @@ public class MMAX2AnnotationScheme implements AnnotationSchemeAPI
         int attCount = this.attributes.size();
         for ( int u=0;u<attCount;u++)
         {
-            String currentName = ((MMAX2Attribute)attributes.get(u)).getDisplayAttributeName();
+            String currentName = ((MMAX2Attribute)attributes.get(u)).getDisplayName();
             if (result.contains(currentName)==false)
             {
                 result.add(currentName);
@@ -1495,13 +1396,20 @@ public class MMAX2AnnotationScheme implements AnnotationSchemeAPI
         return (MMAX2Attribute)this.attributesByID.get(id);
     }
     
+    public final MMAX2Attribute getAttributeByName(String name)
+    {
+    	//System.err.println(name);
+        return (MMAX2Attribute)this.attributesByLowerCasedAttributeName.get(name.toLowerCase());
+    }
+    
+    
     public final String[] getAttributeNamesByType(int type)
     {        
     	ArrayList temp = new ArrayList();
     	MMAX2Attribute[] attributes = getAttributesByType(type);    	
         for (int z=0;z<attributes.length;z++)
         {
-        	temp.add(attributes[z].getDisplayAttributeName());
+        	temp.add(attributes[z].getDisplayName());
         }
         return (String[]) temp.toArray(new String[0]);
     }
@@ -1534,7 +1442,7 @@ public class MMAX2AnnotationScheme implements AnnotationSchemeAPI
             MMAX2Attribute currentAttribute = (MMAX2Attribute) attributes.get(z);
             
             if (currentAttribute.getType() == AttributeAPI.FREETEXT && 
-                currentAttribute.getLowerCasedAttributeName().equalsIgnoreCase(optionalAttributeName)==false)
+                currentAttribute.getDisplayName().equalsIgnoreCase(optionalAttributeName)==false)
             {
                 // Skip freetext attributes unless we know that the current one is the required one
                 continue;
@@ -1560,17 +1468,17 @@ public class MMAX2AnnotationScheme implements AnnotationSchemeAPI
                 if (currentAttribute.getType() == AttributeAPI.FREETEXT==false)
                 {
                     // If the current attribte is not freetext, store its normal name once
-                    if (result.contains(currentAttribute.getLowerCasedAttributeName())==false)
+                    if (result.contains(currentAttribute.getDisplayName())==false)
                     {
-                        result.add(currentAttribute.getLowerCasedAttributeName());
+                        result.add(currentAttribute.getDisplayName());
                     }
                 }
                 else
                 {
                     // If the current attribute is freetext, store  * + its name 
-                    if (result.contains("*"+currentAttribute.getLowerCasedAttributeName())==false)
+                    if (result.contains("*"+currentAttribute.getDisplayName())==false)
                     {
-                        result.add("*"+currentAttribute.getLowerCasedAttributeName());
+                        result.add("*"+currentAttribute.getDisplayName());
                     }                    
                 }
             }

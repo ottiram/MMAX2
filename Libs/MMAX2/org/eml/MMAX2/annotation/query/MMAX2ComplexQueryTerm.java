@@ -1,5 +1,5 @@
 /*
- * Copyright 2007 Mark-Christoph Müller
+ * Copyright 2007 Mark-Christoph Mï¿½ller
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -491,7 +491,7 @@ public class MMAX2ComplexQueryTerm
             for (int z=0;z<attributes.size();z++)
             {
                 // Get name of current attribute and compare to the name found in query term
-                if (((MMAX2Attribute)attributes.get(z)).getLowerCasedAttributeName().equalsIgnoreCase(attributeName))
+                if (((MMAX2Attribute)attributes.get(z)).getDisplayName().equalsIgnoreCase(attributeName))
                 {
                     // Get the correct attribute and exit
                     currentAttribute = (MMAX2Attribute)attributes.get(z);                    
@@ -627,7 +627,7 @@ public class MMAX2ComplexQueryTerm
                         // Check if the current value is legal for the current attribute
                         if (currentAttribute.isDefined(tempValue)==false)
                         {
-                            throw new MMAX2QueryException("Query Semantics Error: Value '"+tempValue+"' is undefined for attribute '"+currentAttribute.getLowerCasedAttributeName()+"' on level '"+level.getMarkableLevelName()+"'!");
+                            throw new MMAX2QueryException("Query Semantics Error: Value '"+tempValue+"' is undefined for attribute '"+currentAttribute.getDisplayName()+"' on level '"+level.getMarkableLevelName()+"'!");
                         }
                         else
                         {
