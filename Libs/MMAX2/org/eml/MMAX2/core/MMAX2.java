@@ -850,7 +850,7 @@ public class MMAX2 extends javax.swing.JFrame implements KeyListener ,java.awt.e
             String file = toki.nextToken();
             file = toki.nextToken();
 
-            MMAX2PopupWindow popup = new MMAX2PopupWindow(file);
+            MMAX2PopupWindow popup = new MMAX2PopupWindow(getCurrentDiscourse().getCommonBasedataPath()+file);
             
             int xPos = this.getCurrentTextPane().getCurrentMouseMoveEvent().getX();              
             int yPos = this.getCurrentTextPane().getCurrentMouseMoveEvent().getY();
